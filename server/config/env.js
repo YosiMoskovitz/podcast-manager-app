@@ -1,0 +1,19 @@
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST - this file is imported before anything else
+dotenv.config();
+
+// Validate critical environment variables
+if (!process.env.ENCRYPTION_KEY) {
+  console.error('❌ ERROR: ENCRYPTION_KEY not found in .env file!');
+  console.error('The server cannot start without this key.');
+  console.error('Please ensure your .env file contains: ENCRYPTION_KEY=...');
+  process.exit(1);
+}
+
+if (!process.env.MONGODB_URI) {
+  console.error('❌ ERROR: MONGODB_URI not found in .env file!');
+  process.exit(1);
+}
+
+console.log('✅ Environment variables loaded successfully');
