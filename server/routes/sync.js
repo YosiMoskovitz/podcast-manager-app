@@ -19,7 +19,7 @@ router.get('/status', (req, res) => {
 // Verify DB vs Drive files
 router.post('/verify', async (req, res) => {
   try {
-    const result = await verifyDriveConsistency();
+    const result = await verifyDriveConsistency(req.user.id);
     res.json(result);
   } catch (error) {
     logger.error('Error verifying files:', error);

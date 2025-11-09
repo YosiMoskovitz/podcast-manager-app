@@ -1,6 +1,13 @@
 import mongoose from 'mongoose';
 
 const systemSettingsSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true
+  },
   // Download settings
   maxEpisodesPerCheck: {
     type: Number,
@@ -27,16 +34,22 @@ const systemSettingsSchema = new mongoose.Schema({
     default: 10,
     min: 0,
     max: 1000
+  },
+  
+  // Auto-check settings
+  autoCheckEnabled: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
 });
 
-// Singleton pattern - only one config per app
-systemSettingsSchema.statics.getSettings = async function() {
-  let settings = await this.findOne();
+// One settings config per user
+systemSettingsSchema.statics.getSettings = async function(userId) {
+  let settings = await this.findOne({ userId });
   if (!settings) {
-    settings = await this.create({});
+    settings = await this.create({ userId });
   }
   return settings;
 };

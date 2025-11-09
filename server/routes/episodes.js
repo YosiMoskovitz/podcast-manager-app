@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
   try {
     const { podcast, status, limit = 50 } = req.query;
     
-    const filter = {};
+    const filter = { userId: req.user.id };
     if (podcast) filter.podcast = podcast;
     if (status) filter.status = status;
     
@@ -30,7 +30,7 @@ router.get('/', async (req, res) => {
 // Get single episode
 router.get('/:id', async (req, res) => {
   try {
-    const episode = await Episode.findById(req.params.id).populate('podcast');
+    const episode = await Episode.findOne({ _id: req.params.id, userId: req.user.id }).populate('podcast');
     
     if (!episode) {
       return res.status(404).json({ error: 'Episode not found' });
@@ -46,7 +46,7 @@ router.get('/:id', async (req, res) => {
 // Download episode
 router.post('/:id/download', async (req, res) => {
   try {
-    const episode = await Episode.findById(req.params.id);
+    const episode = await Episode.findOne({ _id: req.params.id, userId: req.user.id });
     
     if (!episode) {
       return res.status(404).json({ error: 'Episode not found' });
@@ -57,7 +57,7 @@ router.post('/:id/download', async (req, res) => {
     }
     
     // Get podcast object (not just populated reference)
-    const podcast = await Podcast.findById(episode.podcast);
+    const podcast = await Podcast.findOne({ _id: episode.podcast, userId: req.user.id });
     if (!podcast) {
       return res.status(404).json({ error: 'Podcast not found' });
     }
@@ -76,10 +76,10 @@ router.post('/:id/download', async (req, res) => {
 // Re-sync episode (force upload again)
 router.post('/:id/resync', async (req, res) => {
   try {
-    const episode = await Episode.findById(req.params.id);
+    const episode = await Episode.findOne({ _id: req.params.id, userId: req.user.id });
     if (!episode) return res.status(404).json({ error: 'Episode not found' });
 
-    const podcast = await Podcast.findById(episode.podcast);
+    const podcast = await Podcast.findOne({ _id: episode.podcast, userId: req.user.id });
     if (!podcast) return res.status(404).json({ error: 'Podcast not found' });
 
     // Reset minimal fields to trigger fresh upload
@@ -101,7 +101,7 @@ router.post('/:id/resync', async (req, res) => {
 // Delete episode
 router.delete('/:id', async (req, res) => {
   try {
-    const episode = await Episode.findByIdAndDelete(req.params.id);
+    const episode = await Episode.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     
     if (!episode) {
       return res.status(404).json({ error: 'Episode not found' });
@@ -125,7 +125,7 @@ router.delete('/clear-all/confirm', async (req, res) => {
     const DriveCredentials = (await import('../models/DriveCredentials.js')).default;
     
     const drive = getDriveClient();
-    const driveConfig = await DriveCredentials.getConfig();
+    const driveConfig = await DriveCredentials.getConfig(req.user.id);
     const mainFolderId = driveConfig?.folderId;
     
     let deletedFilesCount = 0;
@@ -175,12 +175,12 @@ router.delete('/clear-all/confirm', async (req, res) => {
       }
     }
     
-    // Delete all episodes from database
-    const deleteResult = await Episode.deleteMany({});
+    // Delete all episodes from database for this user
+    const deleteResult = await Episode.deleteMany({ userId: req.user.id });
     logger.info(`Deleted ${deleteResult.deletedCount} episodes from database`);
     
-    // Reset podcast drive folder IDs (so they can be recreated)
-    const updateResult = await Podcast.updateMany({}, { $unset: { driveFolderId: 1 } });
+    // Reset podcast drive folder IDs (so they can be recreated) for this user
+    const updateResult = await Podcast.updateMany({ userId: req.user.id }, { $unset: { driveFolderId: 1 } });
     logger.info(`Reset driveFolderId for ${updateResult.modifiedCount} podcasts`);
     
     res.json({

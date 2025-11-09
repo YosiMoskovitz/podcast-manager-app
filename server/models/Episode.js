@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const episodeSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
   podcast: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Podcast',

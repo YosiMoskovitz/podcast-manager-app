@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const downloadHistorySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
   episode: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Episode',

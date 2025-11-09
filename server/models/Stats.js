@@ -1,10 +1,15 @@
 import mongoose from 'mongoose';
 
 const statsSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
   date: {
     type: Date,
-    required: true,
-    unique: true
+    required: true
   },
   totalPodcasts: Number,
   activePodcasts: Number,
@@ -17,5 +22,8 @@ const statsSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Compound unique index: date must be unique per user
+statsSchema.index({ userId: 1, date: 1 }, { unique: true });
 
 export default mongoose.model('Stats', statsSchema);

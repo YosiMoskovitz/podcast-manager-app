@@ -10,31 +10,53 @@ export function getDriveClient() {
   return driveClient;
 }
 
-export async function initializeDrive() {
+// Initialize Drive client for a specific user
+export async function initializeDrive(userId) {
   try {
-    const config = await DriveCredentials.getConfig();
-    if (!config.clientId || !config.clientSecret) {
-      logger.warn('Google Drive credentials not configured. Upload disabled.');
+    // Use app-level credentials from environment
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      logger.warn('Google OAuth credentials not configured in environment. Upload disabled.');
       return null;
     }
+    
+    // Get user's Drive tokens
+    const config = await DriveCredentials.getConfig(userId);
     if (!config.accessToken) {
-      logger.warn('Google Drive not authorized. Please authorize the app.');
+      logger.warn(`User ${userId} has not authorized Google Drive access.`);
       return null;
     }
-    oauth2Client = new google.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri || 'http://localhost:5000/api/drive/callback');
-    oauth2Client.setCredentials({ access_token: config.accessToken, refresh_token: config.refreshToken, expiry_date: config.tokenExpiry ? config.tokenExpiry.getTime() : null });
+    
+    // Create OAuth2 client with app credentials and user's tokens
+    oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings'
+    );
+    
+    oauth2Client.setCredentials({ 
+      access_token: config.accessToken, 
+      refresh_token: config.refreshToken, 
+      expiry_date: config.tokenExpiry ? config.tokenExpiry.getTime() : null 
+    });
+    
+    // Handle token refresh
     oauth2Client.on('tokens', async (tokens) => {
-      logger.info('Google Drive tokens refreshed');
+      logger.info(`Google Drive tokens refreshed for user ${userId}`);
       if (tokens.access_token) config.accessToken = tokens.access_token;
       if (tokens.refresh_token) config.refreshToken = tokens.refresh_token;
       if (tokens.expiry_date) config.tokenExpiry = new Date(tokens.expiry_date);
       await config.save();
     });
+    
     driveClient = google.drive({ version: 'v3', auth: oauth2Client });
     config.status = 'active';
     config.lastSync = new Date();
     await config.save();
-    logger.info('Google Drive client initialized with OAuth2');
+    
+    logger.info(`Google Drive client initialized for user ${userId}`);
     return driveClient;
   } catch (error) {
     logger.error('Failed to initialize Google Drive:', error);
@@ -102,10 +124,10 @@ async function verifyFolderExists(folderId) {
   }
 }
 
-export async function uploadStreamToDrive(stream, filename, podcast) {
+export async function uploadStreamToDrive(stream, filename, podcast, userId) {
   if (!driveClient) throw new Error('Drive client not initialized. Please configure Google Drive in Settings.');
   try {
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(userId);
     const mainFolderId = config.folderId;
     if (!mainFolderId) throw new Error('No Google Drive folder ID configured');
     

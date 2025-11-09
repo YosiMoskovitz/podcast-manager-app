@@ -3,14 +3,14 @@ import Episode from '../models/Episode.js';
 import DriveCredentials from '../models/DriveCredentials.js';
 import { getDriveClient, listFilesInFolder, getOrCreatePodcastFolder } from './cloudStorage.js';
 
-export async function verifyDriveConsistency() {
+export async function verifyDriveConsistency(userId) {
   const drive = getDriveClient();
-  const driveConfig = await DriveCredentials.getConfig();
+  const driveConfig = await DriveCredentials.getConfig(userId);
   if (!drive || !driveConfig?.folderId) {
     return { status: 'skipped', reason: 'Drive not configured', podcasts: [] };
   }
 
-  const podcasts = await Podcast.find({});
+  const podcasts = await Podcast.find({ userId });
   const results = [];
 
   for (const podcast of podcasts) {

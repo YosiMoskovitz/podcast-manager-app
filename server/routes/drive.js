@@ -9,15 +9,15 @@ import { logger } from '../utils/logger.js';
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Get current Drive configuration status
+// Get current Drive configuration status for logged-in user
 router.get('/config', async (req, res) => {
   try {
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     res.json({
-      hasCredentials: !!config.clientId,
+      hasCredentials: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
       hasToken: !!config.accessToken,
-      status: config.status,
+      status: config.status || 'not_configured',
       folderId: config.folderId,
       enabled: config.enabled,
       errorMessage: config.errorMessage,
@@ -45,7 +45,7 @@ router.post('/credentials', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials file format' });
     }
     
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     // Store credentials
     config.clientId = credentials.client_id;
@@ -81,7 +81,7 @@ router.post('/token', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Invalid token file format' });
     }
     
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     if (!config.clientId) {
       return res.status(400).json({ error: 'Please upload credentials first' });
@@ -112,49 +112,50 @@ router.post('/token', upload.single('file'), async (req, res) => {
   }
 });
 
-// Get authorization URL
+// Get authorization URL for Drive access (user consent)
 router.get('/auth-url', async (req, res) => {
   try {
-    const config = await DriveCredentials.getConfig();
+    // Use app-level credentials from environment (same as login OAuth)
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     
-    if (!config.clientId || !config.clientSecret) {
-      return res.status(400).json({ error: 'Please upload credentials file first' });
+    if (!clientId || !clientSecret) {
+      return res.status(500).json({ 
+        error: 'Google OAuth not configured. Please contact the administrator.' 
+      });
     }
     
-    // Use frontend URL as redirect URI (works for both dev and production)
-    const redirectUri = process.env.FRONTEND_URL || 'http://localhost:3000/settings';
+    // Redirect back to frontend settings page after authorization
+    const redirectUri = process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings';
     
-    // Create temporary OAuth2 client for auth URL generation
+    // Create OAuth2 client with app credentials
     const oauth2Client = new google.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
+      clientId,
+      clientSecret,
       redirectUri
     );
     
+    // Generate authorization URL with Drive scope
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: ['https://www.googleapis.com/auth/drive.file'],
-      prompt: 'consent'
+      prompt: 'consent',
+      state: req.user.id // Pass user ID to associate token later
     });
     
-    // Store the redirect URI used
-    config.redirectUri = redirectUri;
-    config.status = 'needs_authorization';
-    await config.save();
+    logger.info(`Drive authorization URL generated for user: ${req.user.email}`);
     
     res.json({ authUrl });
   } catch (error) {
     logger.error('Error generating auth URL:', error);
-    logger.error('Error stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to generate authorization URL',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: error.message
     });
   }
 });
 
-// Exchange authorization code for tokens (called from frontend)
+// Exchange authorization code for tokens (called from frontend after user authorizes)
 router.post('/exchange-code', async (req, res) => {
   try {
     const { code } = req.body;
@@ -163,46 +164,46 @@ router.post('/exchange-code', async (req, res) => {
       return res.status(400).json({ error: 'No authorization code provided' });
     }
     
-    const config = await DriveCredentials.getConfig();
+    // Use app-level credentials from environment
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings';
     
-    if (!config.clientId || !config.clientSecret) {
-      return res.status(400).json({ error: 'OAuth credentials not configured' });
+    if (!clientId || !clientSecret) {
+      return res.status(500).json({ error: 'Google OAuth not configured' });
     }
     
-    // Create OAuth2 client with the redirect URI we used
-    const redirectUri = config.redirectUri || (process.env.FRONTEND_URL || 'http://localhost:3000/settings');
-    
+    // Create OAuth2 client with app credentials
     const oauth2Client = new google.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
+      clientId,
+      clientSecret,
       redirectUri
     );
     
-    // Exchange code for tokens
+    // Exchange authorization code for tokens
     const { tokens } = await oauth2Client.getToken(code);
     
-    // Store tokens
+    // Get or create Drive config for THIS USER
+    const config = await DriveCredentials.getConfig(req.user.id);
+    
+    // Store user's Drive access tokens (NOT the app credentials!)
     config.accessToken = tokens.access_token;
     config.refreshToken = tokens.refresh_token;
     config.tokenExpiry = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
-    config.tokenJson = JSON.stringify(tokens);
     config.status = 'active';
     config.enabled = true;
     
     await config.save();
     
-    // Initialize Drive client
-    await initializeDrive();
-    
-    logger.info('Google Drive authorized successfully via code exchange');
+    logger.info(`Google Drive authorized successfully for user: ${req.user.email}`);
     
     res.json({ 
-      message: 'Authorization successful',
+      message: 'Google Drive connected successfully!',
       status: 'active'
     });
   } catch (error) {
     logger.error('Error exchanging code:', error);
-    res.status(500).json({ error: 'Failed to exchange authorization code: ' + error.message });
+    res.status(500).json({ error: 'Failed to connect Google Drive: ' + error.message });
   }
 });
 
@@ -215,7 +216,7 @@ router.post('/folder', async (req, res) => {
       return res.status(400).json({ error: 'Folder ID is required' });
     }
     
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     config.folderId = folderId;
     await config.save();
     
@@ -231,7 +232,7 @@ router.post('/folder', async (req, res) => {
 // Toggle Drive enabled/disabled
 router.post('/toggle', async (req, res) => {
   try {
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     config.enabled = !config.enabled;
     await config.save();
     
@@ -250,16 +251,16 @@ router.post('/toggle', async (req, res) => {
 // Test Drive connection
 router.post('/test', async (req, res) => {
   try {
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     if (!config.accessToken) {
       return res.status(400).json({ error: 'Not authorized' });
     }
     
     const oauth2Client = new google.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings'
     );
     
     oauth2Client.setCredentials({
@@ -283,7 +284,7 @@ router.post('/test', async (req, res) => {
   } catch (error) {
     logger.error('Drive connection test failed:', error);
     
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     config.status = 'error';
     config.errorMessage = error.message;
     await config.save();
@@ -295,7 +296,7 @@ router.post('/test', async (req, res) => {
 // Create or find "Podcasts" folder in Drive root
 router.post('/create-folder', async (req, res) => {
   try {
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     if (!config.accessToken) {
       return res.status(400).json({ error: 'Not authorized' });
@@ -303,9 +304,9 @@ router.post('/create-folder', async (req, res) => {
     
     // Create OAuth2 client
     const oauth2Client = new google.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings'
     );
     
     oauth2Client.setCredentials({
@@ -374,7 +375,7 @@ router.post('/create-folder', async (req, res) => {
 // Reset Drive configuration
 router.delete('/config', async (req, res) => {
   try {
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     config.clientId = null;
     config.clientSecret = null;
@@ -405,16 +406,16 @@ router.get('/folders', async (req, res) => {
   try {
     const { parent = 'root' } = req.query;
     
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     if (!config.accessToken) {
       return res.status(400).json({ error: 'Not authorized' });
     }
     
     const oauth2Client = new google.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings'
     );
     
     oauth2Client.setCredentials({
@@ -449,16 +450,16 @@ router.post('/create-custom-folder', async (req, res) => {
       return res.status(400).json({ error: 'Folder name is required' });
     }
     
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     
     if (!config.accessToken) {
       return res.status(400).json({ error: 'Not authorized' });
     }
     
     const oauth2Client = new google.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings'
     );
     
     oauth2Client.setCredentials({
@@ -503,7 +504,7 @@ router.post('/migrate-folder', async (req, res) => {
       return res.status(400).json({ error: 'New folder ID is required' });
     }
     
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     const oldFolderId = config.folderId;
     
     if (!config.accessToken) {
@@ -528,9 +529,9 @@ router.post('/migrate-folder', async (req, res) => {
     
     // Create OAuth2 client
     const oauth2Client = new google.auth.OAuth2(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_DRIVE_CALLBACK_URL || 'http://localhost:3000/settings'
     );
     
     oauth2Client.setCredentials({
@@ -617,7 +618,7 @@ router.get('/diagnostic/files', async (req, res) => {
       return res.status(400).json({ error: 'Drive not initialized' });
     }
 
-    const config = await DriveCredentials.getConfig();
+    const config = await DriveCredentials.getConfig(req.user.id);
     const mainFolderId = config.folderId;
     
     if (!mainFolderId) {

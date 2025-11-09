@@ -128,17 +128,26 @@ This will start:
 - Backend server on `http://localhost:5000`
 - Frontend dev server on `http://localhost:3000`
 
-### Production Mode
+### Production Mode (Single Server)
 
 1. Build the frontend:
 ```bash
 npm run build
 ```
 
-2. Start the production server:
+2. Set environment to production in `.env`:
+```env
+NODE_ENV=production
+```
+
+3. Start the production server:
 ```bash
 npm start
 ```
+
+The Express server will serve both the API and the built React frontend on the same port.
+
+**For full production deployment (VPS, cloud, etc.), see [DEPLOYMENT.md](DEPLOYMENT.md)**
 
 ### Individual Services
 

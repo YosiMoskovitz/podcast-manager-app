@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Radio, List, BarChart3, Home, Settings } from 'lucide-react';
+import { Radio, List, BarChart3, Home, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 function Layout({ children }) {
   const location = useLocation();
+  const { user, logout } = useAuth();
   
   const navItems = [
     { path: '/', icon: Home, label: 'Dashboard' },
@@ -42,12 +44,32 @@ function Layout({ children }) {
           ))}
         </nav>
         
-        {/* Footer info */}
-        <div className="p-6 flex-shrink-0">
-          <div className="bg-white/10 rounded-lg p-4 text-sm">
-            <p className="font-semibold mb-1 truncate">Podcast Manager</p>
-            <p className="text-xs opacity-80 leading-relaxed">Automated RSS downloader with cloud storage</p>
+        {/* User info and logout */}
+        <div className="p-4 flex-shrink-0 border-t border-white/10">
+          <div className="flex items-center gap-3 mb-3">
+            {user?.picture ? (
+              <img 
+                src={user.picture} 
+                alt={user.name} 
+                className="w-10 h-10 rounded-full border-2 border-white/20"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-semibold">
+                {user?.name?.charAt(0)}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{user?.name}</p>
+              <p className="text-xs opacity-80 truncate">{user?.email}</p>
+            </div>
           </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
       

@@ -10,16 +10,17 @@ const router = express.Router();
 // Get current statistics
 router.get('/current', async (req, res) => {
   try {
-    const totalPodcasts = await Podcast.countDocuments();
-    const activePodcasts = await Podcast.countDocuments({ enabled: true });
-    const totalEpisodes = await Episode.countDocuments();
-    const downloadedEpisodes = await Episode.countDocuments({ downloaded: true });
-    const failedDownloads = await Episode.countDocuments({ status: 'failed' });
-    const pendingDownloads = await Episode.countDocuments({ status: 'pending' });
+    const userId = req.user.id;
+    const totalPodcasts = await Podcast.countDocuments({ userId });
+    const activePodcasts = await Podcast.countDocuments({ userId, enabled: true });
+    const totalEpisodes = await Episode.countDocuments({ userId });
+    const downloadedEpisodes = await Episode.countDocuments({ userId, downloaded: true });
+    const failedDownloads = await Episode.countDocuments({ userId, status: 'failed' });
+    const pendingDownloads = await Episode.countDocuments({ userId, status: 'pending' });
     
     // Calculate total storage
     const storageResult = await Episode.aggregate([
-      { $match: { fileSize: { $exists: true } } },
+      { $match: { userId: req.user._id, fileSize: { $exists: true } } },
       { $group: { _id: null, total: { $sum: '$fileSize' } } }
     ]);
     const totalStorageUsed = storageResult[0]?.total || 0;
@@ -27,6 +28,7 @@ router.get('/current', async (req, res) => {
     // Get recent downloads (last 24 hours)
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const downloadsToday = await DownloadHistory.countDocuments({
+      userId,
       status: 'completed',
       createdAt: { $gte: yesterday }
     });
@@ -55,6 +57,7 @@ router.get('/history', async (req, res) => {
     const startDate = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000);
     
     const history = await Stats.find({
+      userId: req.user.id,
       date: { $gte: startDate }
     }).sort({ date: 1 });
     
@@ -70,7 +73,7 @@ router.get('/downloads', async (req, res) => {
   try {
     const { limit = 50, podcast } = req.query;
     
-    const filter = {};
+    const filter = { userId: req.user.id };
     if (podcast) filter.podcast = podcast;
     
     const downloads = await DownloadHistory.find(filter)
@@ -89,7 +92,7 @@ router.get('/downloads', async (req, res) => {
 // Get podcast statistics
 router.get('/podcasts', async (req, res) => {
   try {
-    const podcasts = await Podcast.find();
+    const podcasts = await Podcast.find({ userId: req.user.id });
     
     const podcastStats = await Promise.all(
       podcasts.map(async (podcast) => {

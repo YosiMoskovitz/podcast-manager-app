@@ -7,7 +7,7 @@ const router = express.Router();
 // Get system settings
 router.get('/', async (req, res) => {
   try {
-    const settings = await SystemSettings.getSettings();
+    const settings = await SystemSettings.getSettings(req.user.id);
     res.json(settings);
   } catch (error) {
     logger.error('Error fetching system settings:', error);
@@ -18,14 +18,15 @@ router.get('/', async (req, res) => {
 // Update system settings
 router.put('/', async (req, res) => {
   try {
-    const settings = await SystemSettings.getSettings();
+    const settings = await SystemSettings.getSettings(req.user.id);
     
     // Update allowed fields
     const allowedFields = [
       'maxEpisodesPerCheck',
       'maxConcurrentDownloads',
       'checkIntervalHours',
-      'defaultKeepEpisodeCount'
+      'defaultKeepEpisodeCount',
+      'autoCheckEnabled'
     ];
     
     allowedFields.forEach(field => {

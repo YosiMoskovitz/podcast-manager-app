@@ -9,7 +9,7 @@ const router = express.Router();
 // Get all podcasts
 router.get('/', async (req, res) => {
   try {
-    const podcasts = await Podcast.find().sort({ name: 1 });
+    const podcasts = await Podcast.find({ userId: req.user.id }).sort({ name: 1 });
     res.json(podcasts);
   } catch (error) {
     logger.error('Error fetching podcasts:', error);
@@ -20,12 +20,12 @@ router.get('/', async (req, res) => {
 // Get single podcast with episodes
 router.get('/:id', async (req, res) => {
   try {
-    const podcast = await Podcast.findById(req.params.id);
+    const podcast = await Podcast.findOne({ _id: req.params.id, userId: req.user.id });
     if (!podcast) {
       return res.status(404).json({ error: 'Podcast not found' });
     }
     
-    const episodes = await Episode.find({ podcast: req.params.id })
+    const episodes = await Episode.find({ podcast: req.params.id, userId: req.user.id })
       .sort({ pubDate: -1 })
       .limit(50);
     
@@ -45,6 +45,7 @@ router.post('/', async (req, res) => {
     const feedData = await parseFeed(rssUrl);
     
     const podcast = await Podcast.create({
+      userId: req.user.id,
       name,
       rssUrl,
       description: feedData.description,
@@ -65,8 +66,8 @@ router.post('/', async (req, res) => {
 // Update podcast
 router.put('/:id', async (req, res) => {
   try {
-    const podcast = await Podcast.findByIdAndUpdate(
-      req.params.id,
+    const podcast = await Podcast.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
       req.body,
       { new: true, runValidators: true }
     );
@@ -85,14 +86,14 @@ router.put('/:id', async (req, res) => {
 // Delete podcast
 router.delete('/:id', async (req, res) => {
   try {
-    const podcast = await Podcast.findByIdAndDelete(req.params.id);
+    const podcast = await Podcast.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     
     if (!podcast) {
       return res.status(404).json({ error: 'Podcast not found' });
     }
     
     // Delete all episodes
-    await Episode.deleteMany({ podcast: req.params.id });
+    await Episode.deleteMany({ podcast: req.params.id, userId: req.user.id });
     
     logger.info(`Deleted podcast: ${podcast.name}`);
     res.json({ message: 'Podcast deleted successfully' });
@@ -105,7 +106,7 @@ router.delete('/:id', async (req, res) => {
 // Refresh podcast feed
 router.post('/:id/refresh', async (req, res) => {
   try {
-    const podcast = await Podcast.findById(req.params.id);
+    const podcast = await Podcast.findOne({ _id: req.params.id, userId: req.user.id });
     
     if (!podcast) {
       return res.status(404).json({ error: 'Podcast not found' });
@@ -118,6 +119,7 @@ router.post('/:id/refresh', async (req, res) => {
       const exists = await Episode.findOne({ guid: episodeData.guid });
       if (!exists) {
         await Episode.create({
+          userId: req.user.id,
           ...episodeData,
           podcast: podcast._id
         });

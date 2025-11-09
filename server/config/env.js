@@ -16,4 +16,12 @@ if (!process.env.MONGODB_URI) {
   process.exit(1);
 }
 
+if (!process.env.SESSION_SECRET) {
+  console.error('❌ ERROR: SESSION_SECRET not found in .env file!');
+  console.error('Required for user sessions.');
+  process.exit(1);
+}
+
 console.log('✅ Environment variables loaded successfully');
+console.log('✅ Database configured: MongoDB');
+console.log('✅ Session management configured');

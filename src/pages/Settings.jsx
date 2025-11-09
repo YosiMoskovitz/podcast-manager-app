@@ -61,6 +61,7 @@ function Settings() {
       const response = await fetch('http://localhost:5000/api/drive/exchange-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include session cookie
         body: JSON.stringify({ code })
       });
       
@@ -406,6 +407,30 @@ function Settings() {
         
         {systemSettings && (
           <div className="space-y-6">
+            {/* Auto-Check Toggle */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={systemSettings.autoCheckEnabled || false}
+                  onChange={(e) => setSystemSettings({ ...systemSettings, autoCheckEnabled: e.target.checked })}
+                  className="mt-1 w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary cursor-pointer"
+                />
+                <div className="flex-1">
+                  <span className="font-semibold text-gray-900">Enable Automatic Checking</span>
+                  <p className="text-sm text-gray-600 mt-1">
+                    When enabled, your podcasts will be checked automatically every {systemSettings.checkIntervalHours} hours for new episodes.
+                    You can still manually check anytime using the "Check Now" button.
+                    {!systemSettings.autoCheckEnabled && (
+                      <span className="block mt-2 font-medium text-blue-700">
+                        💡 Auto-check is currently OFF. Enable it to automatically download new episodes.
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </label>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -427,17 +452,27 @@ function Settings() {
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Check Interval (hours)
+                  {!systemSettings.autoCheckEnabled && (
+                    <span className="text-gray-400 text-xs ml-2">(requires auto-check enabled)</span>
+                  )}
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="168"
+                <select
                   value={systemSettings.checkIntervalHours}
                   onChange={(e) => setSystemSettings({ ...systemSettings, checkIntervalHours: parseInt(e.target.value) })}
                   className="input"
-                />
+                  disabled={!systemSettings.autoCheckEnabled}
+                >
+                  <option value="1">Every hour</option>
+                  <option value="2">Every 2 hours</option>
+                  <option value="4">Every 4 hours</option>
+                  <option value="6">Every 6 hours</option>
+                  <option value="12">Every 12 hours</option>
+                  <option value="24">Once a day</option>
+                  <option value="48">Every 2 days</option>
+                  <option value="168">Once a week</option>
+                </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  How often to automatically check for new episodes
+                  How often to automatically check for new episodes (only when auto-check is enabled)
                 </p>
               </div>
               
@@ -516,7 +551,17 @@ function Settings() {
             <h2 className="text-2xl font-bold mb-2">Google Drive Integration</h2>
             <p className="text-gray-600">Upload podcast episodes to your personal Google Drive</p>
           </div>
-          {getStatusBadge()}
+          {config?.hasToken ? (
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium bg-green-100 text-green-700">
+              <CheckCircle className="w-5 h-5" />
+              Connected
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium bg-gray-100 text-gray-700">
+              <AlertCircle className="w-5 h-5" />
+              Not Connected
+            </span>
+          )}
         </div>
         
         {config?.errorMessage && (
@@ -530,116 +575,47 @@ function Settings() {
         )}
         
         <div className="space-y-6">
-          {/* Step 1: Upload Credentials */}
-          <div className="border rounded-lg p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                1
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold mb-2">Upload OAuth2 Credentials</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Download your OAuth 2.0 Client ID JSON file from{' '}
-                  <a 
-                    href="https://console.cloud.google.com/apis/credentials" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    Google Cloud Console
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+          {/* Connect or Configure Drive */}
+          {!config?.hasToken ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="text-center">
+                <h3 className="text-xl font-bold mb-3">Connect Your Google Drive</h3>
+                <p className="text-gray-600 mb-6">
+                  Click the button below to securely connect your Google Drive account.
+                  You'll be redirected to Google to authorize access.
                 </p>
-                
-                <div className="flex items-center gap-3">
-                  <label className="btn btn-secondary cursor-pointer flex items-center gap-2">
-                    <Upload className="w-4 h-4" />
-                    {uploading ? 'Uploading...' : 'Upload credentials.json'}
-                    <input 
-                      type="file" 
-                      accept=".json" 
-                      className="hidden" 
-                      onChange={handleCredentialsUpload}
-                      disabled={uploading}
-                    />
-                  </label>
-                  {config?.hasCredentials && (
-                    <span className="text-green-600 flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4" />
-                      Uploaded
-                    </span>
-                  )}
-                </div>
+                <button 
+                  onClick={handleAuthorize}
+                  disabled={!config?.hasCredentials}
+                  className="btn btn-primary flex items-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Connect Google Drive
+                </button>
+                {!config?.hasCredentials && (
+                  <p className="text-sm text-gray-500 mt-3">
+                    Note: Google OAuth credentials must be configured by the app administrator
+                  </p>
+                )}
               </div>
             </div>
-          </div>
-          
-          {/* Step 2: Authorize or Upload Token */}
-          <div className="border rounded-lg p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                2
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold mb-2">Authorize Access</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Choose one of the following options:
-                </p>
-                
-                {/* Option A: OAuth Flow */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p className="font-medium mb-2">Option A: Authorize via Browser</p>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Click the button below to authorize this app to access your Google Drive
-                  </p>
-                  <button 
-                    onClick={handleAuthorize}
-                    disabled={!config?.hasCredentials}
-                    className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Authorize with Google
-                  </button>
-                </div>
-                
-                {/* Option B: Upload Token */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <p className="font-medium mb-2">Option B: Upload Token JSON</p>
-                  <p className="text-sm text-gray-600 mb-3">
-                    If you already have a token.json file from a previous authorization, upload it here
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <label className="btn btn-secondary cursor-pointer flex items-center gap-2">
-                      <Upload className="w-4 h-4" />
-                      {uploading ? 'Uploading...' : 'Upload token.json'}
-                      <input 
-                        type="file" 
-                        accept=".json" 
-                        className="hidden" 
-                        onChange={handleTokenUpload}
-                        disabled={uploading || !config?.hasCredentials}
-                      />
-                    </label>
-                    {config?.hasToken && (
-                      <span className="text-green-600 flex items-center gap-1">
-                        <CheckCircle className="w-4 h-4" />
-                        Authorized
-                      </span>
-                    )}
+          ) : (
+            <>
+              {/* Drive Connected - Show Folder Configuration */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  <div>
+                    <p className="font-semibold text-green-900">Google Drive Connected</p>
+                    <p className="text-sm text-green-700">Your podcasts will be uploaded to your Google Drive</p>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          
-          {/* Step 3: Set Folder ID */}
+              
+              {/* Folder Configuration */}
           <div className="border rounded-lg p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                3
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold mb-2">Set Drive Folder</h3>
+            <div className="flex-1">
+                <h3 className="text-lg font-bold mb-4">Podcast Storage Folder</h3>
                 
                 {!config?.folderId && !useCustomFolder ? (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
@@ -694,26 +670,17 @@ function Settings() {
                   </>
                 )}
               </div>
-            </div>
           </div>
           
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t">
+          <div className="flex gap-3 pt-6">
             <button 
               onClick={handleTest}
-              disabled={!config?.hasToken || testing}
-              className="btn btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={testing}
+              className="btn btn-secondary flex items-center gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${testing ? 'animate-spin' : ''}`} />
               {testing ? 'Testing...' : 'Test Connection'}
-            </button>
-            
-            <button 
-              onClick={handleToggle}
-              disabled={!config?.hasToken}
-              className={`btn ${config?.enabled ? 'btn-primary' : 'btn-secondary'} flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {config?.enabled ? 'Disable' : 'Enable'} Drive Upload
             </button>
             
             <button 
@@ -721,11 +688,58 @@ function Settings() {
               className="btn btn-danger flex items-center gap-2 ml-auto"
             >
               <Trash2 className="w-4 h-4" />
-              Reset Configuration
+              Disconnect Drive
             </button>
           </div>
+            </>
+          )}
         </div>
       </div>
+      
+      {/* Advanced Settings - Only show when connected */}
+      {config?.hasToken && (
+      <div className="card mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <SettingsIcon className="w-6 h-6 text-gray-600" />
+          <div>
+            <h2 className="text-2xl font-bold">Advanced Drive Settings</h2>
+            <p className="text-gray-600">Additional configuration options</p>
+          </div>
+        </div>
+        
+        <div className="space-y-6">
+          {/* Legacy Upload Options - Collapsed by default */}
+          <details className="border rounded-lg">
+            <summary className="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium">
+              Advanced: Manual Credential Upload (Legacy)
+            </summary>
+            <div className="px-6 pb-6 space-y-4 border-t">
+              <p className="text-sm text-gray-600 mt-4">These options are for advanced users only. Most users don't need this.</p>
+              <label className="btn btn-secondary cursor-pointer flex items-center gap-2 w-fit">
+                <Upload className="w-4 h-4" />
+                Upload credentials.json
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={handleCredentialsUpload}
+                />
+              </label>
+              <label className="btn btn-secondary cursor-pointer flex items-center gap-2 w-fit">
+                <Upload className="w-4 h-4" />
+                Upload token.json
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={handleTokenUpload}
+                />
+              </label>
+            </div>
+          </details>
+        </div>
+      </div>
+      )}
       
       {/* Data Management Section */}
       <div className="card mb-6">
@@ -810,42 +824,25 @@ function Settings() {
         </div>
       </div>
       
-      {/* Instructions */}
+      {/* Help - Only show when NOT connected */}
+      {!config?.hasToken && (
       <div className="card">
-        <h3 className="text-xl font-bold mb-4">Setup Instructions</h3>
-        <div className="space-y-4 text-sm">
-          <div>
-            <h4 className="font-semibold mb-2">1. Create OAuth2 Credentials:</h4>
-            <ul className="list-disc list-inside space-y-1 text-gray-600 ml-4">
-              <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a></li>
-              <li>Create a new project or select an existing one</li>
-              <li>Enable the Google Drive API</li>
-              <li>Go to Credentials → Create Credentials → OAuth 2.0 Client ID</li>
-              <li>Choose "Desktop app" or "Web application"</li>
-              <li>Add authorized redirect URI: <code className="bg-gray-100 px-2 py-1 rounded">http://localhost:5000/api/drive/callback</code></li>
-              <li>Download the JSON file and upload it above</li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-2">2. Authorize the App:</h4>
-            <ul className="list-disc list-inside space-y-1 text-gray-600 ml-4">
-              <li>Click "Authorize with Google" button (Option A)</li>
-              <li>OR upload a token.json file if you have one (Option B)</li>
-              <li>Follow the OAuth flow to grant access to your Google Drive</li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-2">3. Set Folder ID:</h4>
-            <ul className="list-disc list-inside space-y-1 text-gray-600 ml-4">
-              <li>Create a folder in your Google Drive for podcasts</li>
-              <li>Copy the folder ID from the URL</li>
-              <li>Paste it in the folder ID field above</li>
-            </ul>
-          </div>
+        <h3 className="text-xl font-bold mb-4">How It Works</h3>
+        <div className="space-y-3 text-sm text-gray-600">
+          <p>
+            <strong>Simple Setup:</strong> Just click the "Connect Google Drive" button above. 
+            You'll be redirected to Google to securely authorize access to your Drive.
+          </p>
+          <p>
+            <strong>What We Access:</strong> The app can only create and access files it creates. 
+            It cannot see or modify your other Drive files.
+          </p>
+          <p>
+            <strong>Your Data:</strong> Podcast episodes are uploaded directly to your personal Google Drive account.
+          </p>
         </div>
       </div>
+      )}
       
       {/* Confirmation Modals */}
       <ConfirmModal

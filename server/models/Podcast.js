@@ -1,10 +1,15 @@
 import mongoose from 'mongoose';
 
 const podcastSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
   name: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   rssUrl: {
     type: String,
@@ -39,5 +44,8 @@ const podcastSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Compound unique index: name must be unique per user
+podcastSchema.index({ userId: 1, name: 1 }, { unique: true });
 
 export default mongoose.model('Podcast', podcastSchema);

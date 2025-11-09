@@ -34,6 +34,13 @@ function decrypt(text) {
 }
 
 const driveCredentialsSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true
+  },
   // OAuth2 Client credentials (from Google Console JSON)
   clientId: String,
   clientSecret: {
@@ -89,11 +96,11 @@ const driveCredentialsSchema = new mongoose.Schema({
   toObject: { getters: true }
 });
 
-// Singleton pattern - only one config per app
-driveCredentialsSchema.statics.getConfig = async function() {
-  let config = await this.findOne();
+// One drive config per user
+driveCredentialsSchema.statics.getConfig = async function(userId) {
+  let config = await this.findOne({ userId });
   if (!config) {
-    config = await this.create({});
+    config = await this.create({ userId });
   }
   return config;
 };

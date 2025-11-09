@@ -11,33 +11,42 @@
     "preview": "vite preview",
     "start": "node server/index.js"
   },
-  "keywords": ["podcast", "rss", "downloader", "mongodb"],
+  "keywords": [
+    "podcast",
+    "rss",
+    "downloader",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^8.0.3",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5",
     "axios": "^1.6.2",
-    "rss-parser": "^3.13.0",
-    "node-cron": "^3.0.3",
-    "winston": "^3.11.0",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-session": "^1.18.2",
     "googleapis": "^128.0.0",
+    "lucide-react": "^0.294.0",
+    "mongoose": "^8.0.3",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
-    "lucide-react": "^0.294.0",
-    "recharts": "^2.10.3"
+    "recharts": "^2.10.3",
+    "rss-parser": "^3.13.0",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.0.8",
-    "nodemon": "^3.0.2",
-    "concurrently": "^8.2.2",
     "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2",
     "postcss": "^8.4.32",
-    "tailwindcss": "^3.3.6"
+    "tailwindcss": "^3.3.6",
+    "vite": "^5.0.8"
   }
 }
