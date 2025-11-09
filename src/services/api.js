@@ -1,9 +1,11 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Export a normalized base URL without trailing slash for use in direct fetches
+export const API_BASE = API_URL.replace(/\/$/, '');
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json'
   },
