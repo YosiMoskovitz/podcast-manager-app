@@ -1,10 +1,7 @@
 import axios from 'axios';
+import { getApiUrl } from '../utils/apiUrl';
 
-// Prefer runtime-injected config (window.__CONFIG__) when available. This allows
-// the server to inject the correct API URL at serve-time so builds don't need
-// to be rebuilt per environment.
-const runtimeApi = (typeof window !== 'undefined' && window.__CONFIG__ && window.__CONFIG__.API_URL) ? window.__CONFIG__.API_URL : null;
-const API_URL = runtimeApi || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = getApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,

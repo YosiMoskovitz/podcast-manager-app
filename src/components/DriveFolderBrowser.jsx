@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Folder, ChevronRight, ChevronDown, Home, Loader, FolderPlus } from 'lucide-react';
+import { getApiBaseUrl } from '../utils/apiUrl';
 
 function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }) {
   const [folders, setFolders] = useState([]);
@@ -21,7 +22,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/drive/folders?parent=root');
+      const response = await fetch(`${getApiBaseUrl()}/drive/folders?parent=root`);
       const data = await response.json();
       
       if (response.ok) {
@@ -45,7 +46,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
 
   const loadSubfolders = async (folderId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/drive/folders?parent=${folderId}`);
+      const response = await fetch(`${getApiBaseUrl()}/drive/folders?parent=${folderId}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -99,7 +100,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
     
     setCreatingFolder(true);
     try {
-      const response = await fetch('http://localhost:5000/api/drive/create-custom-folder', {
+      const response = await fetch(`${getApiBaseUrl()}/drive/create-custom-folder`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

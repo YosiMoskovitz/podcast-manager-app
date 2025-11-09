@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { getApiBaseUrl } from '../utils/apiUrl';
 
 const AuthContext = createContext(null);
 
@@ -14,7 +15,7 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/user', {
+      const response = await fetch(`${getApiBaseUrl()}/auth/user`, {
         credentials: 'include'
       });
 
@@ -34,12 +35,12 @@ export function AuthProvider({ children }) {
 
   const login = () => {
     // Redirect to Google OAuth
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = `${getApiBaseUrl()}/auth/google`;
   };
 
   const logout = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/logout', {
+      const response = await fetch(`${getApiBaseUrl()}/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });

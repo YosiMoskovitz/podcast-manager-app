@@ -434,7 +434,6 @@ CMD ["node", "server/index.js"]
 - **Render.com**: Easy deployment, free tier available
 - **Railway.app**: Simple setup with automatic deployments
 - **Heroku**: Classic PaaS option
-- **Fly.io**: Modern edge deployment
 
 ## Support
 

@@ -124,7 +124,6 @@ GOOGLE_DRIVE_CALLBACK_URL=https://yourdomain.com/settings
 ### Platform as a Service (Easiest)
 - **Render.com** - Free tier, auto-deploy from Git
 - **Railway.app** - Simple setup, good free tier
-- **Fly.io** - Edge deployment
 - **Heroku** - Classic option (paid now)
 
 ### Docker (Portable)

@@ -6,6 +6,7 @@ import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import DriveFolderBrowser from '../components/DriveFolderBrowser';
+import { getApiBaseUrl } from '../utils/apiUrl';
 
 function Settings() {
   const [searchParams] = useSearchParams();
@@ -58,7 +59,7 @@ function Settings() {
     try {
       setLoading(true);
       // Send code to backend to exchange for tokens
-      const response = await fetch('http://localhost:5000/api/drive/exchange-code', {
+      const response = await fetch(`${getApiBaseUrl()}/drive/exchange-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Include session cookie
