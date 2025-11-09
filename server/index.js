@@ -40,6 +40,13 @@ dirs.forEach(dir => {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust first proxy (required for Render, Heroku, etc. when behind a load balancer)
+// This allows req.protocol and req.secure to work correctly with HTTPS termination at proxy
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+  logger.info('[PROXY] Trust proxy enabled for production');
+}
+
 // Configure CORS
 const allowedOrigins = [
   process.env.CLIENT_URL,
@@ -77,8 +84,21 @@ app.use((req, res, next) => {
   logger.info(`[REQUEST] ${req.method} ${req.path}`);
   logger.info(`[REQUEST] Origin: ${req.get('origin') || 'same-origin'}`);
   logger.info(`[REQUEST] Host: ${req.get('host')}`);
+  logger.info(`[REQUEST] Protocol: ${req.protocol} (secure: ${req.secure})`);
+  logger.info(`[REQUEST] X-Forwarded-Proto: ${req.get('x-forwarded-proto') || 'none'}`);
   logger.info(`[REQUEST] Cookies received: ${JSON.stringify(req.cookies)}`);
   logger.info(`[REQUEST] Cookie header: ${req.get('cookie') || 'none'}`);
+  
+  // Log response headers on finish
+  const originalSend = res.send;
+  res.send = function(data) {
+    const setCookie = res.getHeader('set-cookie');
+    if (setCookie) {
+      logger.info(`[RESPONSE] Set-Cookie: ${JSON.stringify(setCookie)}`);
+    }
+    return originalSend.call(this, data);
+  };
+  
   next();
 });
 
