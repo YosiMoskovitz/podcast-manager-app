@@ -1,36 +1,10 @@
 import axios from 'axios';
 
-// Determine API base URL with this precedence:
-// 1. VITE_API_URL (build-time explicit)
-// 2. If PROD_PROVIDER indicates RENDER (either via VITE_PROD_PROVIDER at build or
-//    a runtime-injected window.__PROD_PROVIDER), use the current origin + '/api'
-// 3. Fallback to origin + '/api' in a browser, or localhost:5000/api for non-browser
-const resolveApiUrl = () => {
-  // 1) explicit build-time API URL
-  const viteApi = import.meta.env.VITE_API_URL;
-  if (viteApi) return viteApi;
-
-  // 2) detect provider (several places, to be flexible):
-  // - import.meta.env.VITE_PROD_PROVIDER (recommended to set during build)
-  // - import.meta.env.PROD_PROVIDER (sometimes available in build environments)
-  // - window.__PROD_PROVIDER (server-injected runtime config)
-  const prodProvider = (
-    import.meta.env.VITE_PROD_PROVIDER || import.meta.env.PROD_PROVIDER ||
-    (typeof window !== 'undefined' ? window.__PROD_PROVIDER : undefined)
-  );
-
-  if (prodProvider === 'RENDER') {
-    if (typeof window !== 'undefined') return `${window.location.origin}/api`;
-    // If not in a browser, fall back to localhost (useful for SSR/build-time tools)
-    return 'http://localhost:5000/api';
-  }
-
-  // 3) default behavior: prefer runtime origin when available
-  if (typeof window !== 'undefined') return `${window.location.origin}/api`;
-  return 'http://localhost:5000/api';
-};
-
-const API_URL = resolveApiUrl();
+// Prefer runtime-injected config (window.__CONFIG__) when available. This allows
+// the server to inject the correct API URL at serve-time so builds don't need
+// to be rebuilt per environment.
+const runtimeApi = (typeof window !== 'undefined' && window.__CONFIG__ && window.__CONFIG__.API_URL) ? window.__CONFIG__.API_URL : null;
+const API_URL = runtimeApi || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,

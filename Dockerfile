@@ -11,6 +11,11 @@ WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV="production"
+# Optional runtime defaults (can be overridden at docker run -e or by build-args)
+ARG RUNTIME_API_URL
+ARG PROD_PROVIDER
+ENV RUNTIME_API_URL=${RUNTIME_API_URL}
+ENV PROD_PROVIDER=${PROD_PROVIDER}
 
 
 # Throw-away build stage to reduce size of final image
