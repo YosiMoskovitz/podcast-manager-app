@@ -2,7 +2,7 @@
 
 # Adjust NODE_VERSION as desired
 ARG NODE_VERSION=20.18.0
-FROM node:${NODE_VERSION}-slim AS base
+FROM node:${NODE_VERSION} AS base
 
 LABEL fly_launch_runtime="Node.js"
 
@@ -17,7 +17,12 @@ ENV NODE_ENV="production"
 FROM base AS build
 
 # Install packages needed to build node modules
-RUN apt-get update -qq && \
+# Ensure apt uses HTTPS mirrors (fixes environments where HTTP mirrors fail)
+# Some slim base images may not have /etc/apt/sources.list — recreate it with HTTPS entries
+RUN echo 'deb https://deb.debian.org/debian bookworm main contrib non-free' > /etc/apt/sources.list && \
+    echo 'deb https://deb.debian.org/debian bookworm-updates main contrib non-free' >> /etc/apt/sources.list && \
+    echo 'deb https://deb.debian.org/debian-security bookworm-security main contrib non-free' >> /etc/apt/sources.list && \
+    apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
 
 # Install node modules
