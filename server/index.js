@@ -44,6 +44,19 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
+
+// Log all requests with session info
+app.use((req, res, next) => {
+  logger.info(`[REQUEST] ${req.method} ${req.path}`);
+  logger.info(`[REQUEST] Origin: ${req.get('origin')}`);
+  logger.info(`[REQUEST] Host: ${req.get('host')}`);
+  logger.info(`[REQUEST] Session ID: ${req.sessionID}`);
+  if (req.session) {
+    logger.info(`[REQUEST] Session cookie: ${req.session.cookie ? 'present' : 'missing'}`);
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -53,7 +66,7 @@ if (!process.env.SESSION_SECRET) {
   throw new Error('SESSION_SECRET must be set in .env file');
 }
 
-app.use(session({
+const sessionConfig = {
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -65,19 +78,24 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Changed to 'none' for production
+    domain: process.env.COOKIE_DOMAIN || undefined // Allow domain configuration
   }
-}));
+};
+
+logger.info(`[SESSION] Configuration: ${JSON.stringify({
+  secure: sessionConfig.cookie.secure,
+  sameSite: sessionConfig.cookie.sameSite,
+  domain: sessionConfig.cookie.domain,
+  maxAge: sessionConfig.cookie.maxAge,
+  httpOnly: sessionConfig.cookie.httpOnly
+})}`);
+
+app.use(session(sessionConfig));
 
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Request logging
-app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`);
-  next();
-});
 
 // Routes
 app.use('/api/auth', authRouter);

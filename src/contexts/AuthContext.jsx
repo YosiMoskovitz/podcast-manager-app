@@ -15,18 +15,26 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/auth/user`, {
+      const apiUrl = `${getApiBaseUrl()}/auth/user`;
+      console.log('[AUTH] Checking authentication at:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         credentials: 'include'
       });
 
+      console.log('[AUTH] Response status:', response.status);
+      console.log('[AUTH] Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (response.ok) {
         const userData = await response.json();
+        console.log('[AUTH] User authenticated:', userData.email);
         setUser(userData);
       } else {
+        console.log('[AUTH] User not authenticated');
         setUser(null);
       }
     } catch (err) {
-      console.error('Auth check failed:', err);
+      console.error('[AUTH] Auth check failed:', err);
       setUser(null);
     } finally {
       setLoading(false);
@@ -35,7 +43,9 @@ export function AuthProvider({ children }) {
 
   const login = () => {
     // Redirect to Google OAuth
-    window.location.href = `${getApiBaseUrl()}/auth/google`;
+    const authUrl = `${getApiBaseUrl()}/auth/google`;
+    console.log('[AUTH] Redirecting to Google OAuth:', authUrl);
+    window.location.href = authUrl;
   };
 
   const logout = async () => {

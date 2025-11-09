@@ -11,6 +11,8 @@ import Login from './pages/Login';
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
 
+  console.log('[ProtectedRoute] isAuthenticated:', isAuthenticated, 'loading:', loading);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -20,6 +22,10 @@ function ProtectedRoute({ children }) {
         </div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    console.log('[ProtectedRoute] User not authenticated, redirecting to /login');
   }
 
   return isAuthenticated ? children : <Navigate to="/login" replace />;
