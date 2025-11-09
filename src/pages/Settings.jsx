@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Upload, CheckCircle, AlertCircle, ExternalLink, RefreshCw, Trash2, FolderPlus, Settings as SettingsIcon, Download, FileUp, FolderSync, Folder } from 'lucide-react';
 import { getDriveConfig, uploadCredentials, uploadToken, getAuthUrl, setFolderId, toggleDrive, testConnection, resetDriveConfig, createPodcastsFolder, getSystemSettings, updateSystemSettings, exportPodcasts, importPodcasts, clearAllEpisodes, migratePodcastFolder } from '../services/api';
-import { API_BASE } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -59,7 +58,7 @@ function Settings() {
     try {
       setLoading(true);
       // Send code to backend to exchange for tokens
-  const response = await fetch(`${API_BASE}/drive/exchange-code`, {
+      const response = await fetch('http://localhost:5000/api/drive/exchange-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Include session cookie

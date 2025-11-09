@@ -1,11 +1,39 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-// Export a normalized base URL without trailing slash for use in direct fetches
-export const API_BASE = API_URL.replace(/\/$/, '');
+// Determine API base URL with this precedence:
+// 1. VITE_API_URL (build-time explicit)
+// 2. If PROD_PROVIDER indicates RENDER (either via VITE_PROD_PROVIDER at build or
+//    a runtime-injected window.__PROD_PROVIDER), use the current origin + '/api'
+// 3. Fallback to origin + '/api' in a browser, or localhost:5000/api for non-browser
+const resolveApiUrl = () => {
+  // 1) explicit build-time API URL
+  const viteApi = import.meta.env.VITE_API_URL;
+  if (viteApi) return viteApi;
+
+  // 2) detect provider (several places, to be flexible):
+  // - import.meta.env.VITE_PROD_PROVIDER (recommended to set during build)
+  // - import.meta.env.PROD_PROVIDER (sometimes available in build environments)
+  // - window.__PROD_PROVIDER (server-injected runtime config)
+  const prodProvider = (
+    import.meta.env.VITE_PROD_PROVIDER || import.meta.env.PROD_PROVIDER ||
+    (typeof window !== 'undefined' ? window.__PROD_PROVIDER : undefined)
+  );
+
+  if (prodProvider === 'RENDER') {
+    if (typeof window !== 'undefined') return `${window.location.origin}/api`;
+    // If not in a browser, fall back to localhost (useful for SSR/build-time tools)
+    return 'http://localhost:5000/api';
+  }
+
+  // 3) default behavior: prefer runtime origin when available
+  if (typeof window !== 'undefined') return `${window.location.origin}/api`;
+  return 'http://localhost:5000/api';
+};
+
+const API_URL = resolveApiUrl();
 
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
   },
