@@ -163,10 +163,10 @@ async function startServer() {
     startUserScheduler();
     
     // Start Express server
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       logger.info(`Server running on port ${PORT}`);
-      console.log('\n🚀 Server running on http://localhost:${PORT}');
-      console.log(`📊 API available at http://localhost:${PORT}/api`);
+      console.log(`\n🚀 Server running on port ${PORT}`);
+      console.log(`📊 API available at http://0.0.0.0:${PORT}/api`);
     });
     
   } catch (error) {
