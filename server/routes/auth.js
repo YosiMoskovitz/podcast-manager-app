@@ -49,12 +49,23 @@ router.get('/google/callback',
     logger.info(`[AUTH] Google OAuth successful - User: ${req.user?.email}`);
     logger.info(`[AUTH] Session ID after auth: ${req.sessionID}`);
     logger.info(`[AUTH] isAuthenticated: ${req.isAuthenticated()}`);
-    logger.info(`[AUTH] Session data: ${JSON.stringify(req.session)}`);
+    logger.info(`[AUTH] Session data BEFORE save: ${JSON.stringify(req.session)}`);
     
-    // Redirect to frontend after successful authentication
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    logger.info(`[AUTH] Redirecting to frontend: ${frontendUrl}`);
-    res.redirect(frontendUrl);
+    // Explicitly save the session before redirecting
+    req.session.save((err) => {
+      if (err) {
+        logger.error(`[AUTH] Session save error: ${err.message}`);
+        return res.redirect('/login?error=session_save_failed');
+      }
+      
+      logger.info(`[AUTH] Session saved successfully`);
+      logger.info(`[AUTH] Session data AFTER save: ${JSON.stringify(req.session)}`);
+      
+      // Redirect to frontend after successful authentication
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      logger.info(`[AUTH] Redirecting to frontend: ${frontendUrl}`);
+      res.redirect(frontendUrl);
+    });
   }
 );
 

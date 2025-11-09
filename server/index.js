@@ -3,6 +3,7 @@ import './config/env.js';
 
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import fs from 'fs';
@@ -39,21 +40,45 @@ dirs.forEach(dir => {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Configure CORS
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost:5000'
+].filter(Boolean); // Remove undefined values
+
+logger.info(`[CORS] Allowed origins: ${JSON.stringify(allowedOrigins)}`);
+
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      logger.info('[CORS] Request with no origin - allowing');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      logger.info(`[CORS] Origin ${origin} - allowed`);
+      callback(null, true);
+    } else {
+      logger.warn(`[CORS] Origin ${origin} - blocked`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
+
+app.use(cookieParser()); // Add cookie parser
 
 // Log all requests with session info
 app.use((req, res, next) => {
   logger.info(`[REQUEST] ${req.method} ${req.path}`);
-  logger.info(`[REQUEST] Origin: ${req.get('origin')}`);
+  logger.info(`[REQUEST] Origin: ${req.get('origin') || 'same-origin'}`);
   logger.info(`[REQUEST] Host: ${req.get('host')}`);
-  logger.info(`[REQUEST] Session ID: ${req.sessionID}`);
-  if (req.session) {
-    logger.info(`[REQUEST] Session cookie: ${req.session.cookie ? 'present' : 'missing'}`);
-  }
+  logger.info(`[REQUEST] Cookies received: ${JSON.stringify(req.cookies)}`);
+  logger.info(`[REQUEST] Cookie header: ${req.get('cookie') || 'none'}`);
   next();
 });
 
@@ -78,7 +103,8 @@ const sessionConfig = {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Changed to 'none' for production
+    // Use 'lax' for same-origin (Render single domain), 'none' only if frontend is separate domain
+    sameSite: process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'lax' : 'lax'),
     domain: process.env.COOKIE_DOMAIN || undefined // Allow domain configuration
   }
 };
@@ -92,6 +118,23 @@ logger.info(`[SESSION] Configuration: ${JSON.stringify({
 })}`);
 
 app.use(session(sessionConfig));
+
+// Log session info after session middleware
+app.use((req, res, next) => {
+  logger.info(`[SESSION] Session ID: ${req.sessionID || 'none'}`);
+  logger.info(`[SESSION] Session exists: ${!!req.session}`);
+  if (req.session) {
+    logger.info(`[SESSION] Session keys: ${JSON.stringify(Object.keys(req.session))}`);
+    logger.info(`[SESSION] Has passport: ${!!req.session.passport}`);
+    logger.info(`[SESSION] Cookie settings: ${JSON.stringify({
+      secure: req.session.cookie.secure,
+      httpOnly: req.session.cookie.httpOnly,
+      sameSite: req.session.cookie.sameSite,
+      domain: req.session.cookie.domain
+    })}`);
+  }
+  next();
+});
 
 // Initialize Passport
 app.use(passport.initialize());
@@ -144,6 +187,12 @@ if (process.env.NODE_ENV === 'production') {
   const indexCache = new Map();
 
   app.get('*', (req, res, next) => {
+    // Skip API routes - they should be handled by the routers above
+    if (req.path.startsWith('/api/')) {
+      logger.warn(`[STATIC] API route ${req.path} reached catch-all - this should not happen!`);
+      return next();
+    }
+
     const indexPath = path.join(distPath, 'index.html');
 
     const prodProvider = process.env.PROD_PROVIDER || process.env.VITE_PROD_PROVIDER || null;
