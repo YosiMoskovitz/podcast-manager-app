@@ -44,61 +44,20 @@ const PORT = process.env.PORT || 5000;
 // This allows req.protocol and req.secure to work correctly with HTTPS termination at proxy
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
-  logger.info('[PROXY] Trust proxy enabled for production');
+  logger.info('Trust proxy enabled for production');
 }
-
-// Configure CORS
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  process.env.FRONTEND_URL,
-  'http://localhost:3000',
-  'http://localhost:5000'
-].filter(Boolean); // Remove undefined values
-
-logger.info(`[CORS] Allowed origins: ${JSON.stringify(allowedOrigins)}`);
 
 // Middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      logger.info('[CORS] Request with no origin - allowing');
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      logger.info(`[CORS] Origin ${origin} - allowed`);
-      callback(null, true);
-    } else {
-      logger.warn(`[CORS] Origin ${origin} - blocked`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
 
-app.use(cookieParser()); // Add cookie parser
+app.use(cookieParser());
 
-// Log all requests with session info
+// Request logging
 app.use((req, res, next) => {
-  logger.info(`[REQUEST] ${req.method} ${req.path}`);
-  logger.info(`[REQUEST] Origin: ${req.get('origin') || 'same-origin'}`);
-  logger.info(`[REQUEST] Host: ${req.get('host')}`);
-  logger.info(`[REQUEST] Protocol: ${req.protocol} (secure: ${req.secure})`);
-  logger.info(`[REQUEST] X-Forwarded-Proto: ${req.get('x-forwarded-proto') || 'none'}`);
-  logger.info(`[REQUEST] Cookies received: ${JSON.stringify(req.cookies)}`);
-  logger.info(`[REQUEST] Cookie header: ${req.get('cookie') || 'none'}`);
-  
-  // Log response headers on finish
-  const originalSend = res.send;
-  res.send = function(data) {
-    const setCookie = res.getHeader('set-cookie');
-    if (setCookie) {
-      logger.info(`[RESPONSE] Set-Cookie: ${JSON.stringify(setCookie)}`);
-    }
-    return originalSend.call(this, data);
-  };
-  
+  logger.info(`${req.method} ${req.path}`);
   next();
 });
 
@@ -129,32 +88,7 @@ const sessionConfig = {
   }
 };
 
-logger.info(`[SESSION] Configuration: ${JSON.stringify({
-  secure: sessionConfig.cookie.secure,
-  sameSite: sessionConfig.cookie.sameSite,
-  domain: sessionConfig.cookie.domain,
-  maxAge: sessionConfig.cookie.maxAge,
-  httpOnly: sessionConfig.cookie.httpOnly
-})}`);
-
 app.use(session(sessionConfig));
-
-// Log session info after session middleware
-app.use((req, res, next) => {
-  logger.info(`[SESSION] Session ID: ${req.sessionID || 'none'}`);
-  logger.info(`[SESSION] Session exists: ${!!req.session}`);
-  if (req.session) {
-    logger.info(`[SESSION] Session keys: ${JSON.stringify(Object.keys(req.session))}`);
-    logger.info(`[SESSION] Has passport: ${!!req.session.passport}`);
-    logger.info(`[SESSION] Cookie settings: ${JSON.stringify({
-      secure: req.session.cookie.secure,
-      httpOnly: req.session.cookie.httpOnly,
-      sameSite: req.session.cookie.sameSite,
-      domain: req.session.cookie.domain
-    })}`);
-  }
-  next();
-});
 
 // Initialize Passport
 app.use(passport.initialize());

@@ -54,20 +54,13 @@ if (!hasGoogleCreds) {
 
 // Serialize user to session
 passport.serializeUser((user, done) => {
-  logger.info(`[PASSPORT] Serializing user: ${user.email} (ID: ${user.id})`);
   done(null, user.id);
 });
 
 // Deserialize user from session
 passport.deserializeUser(async (id, done) => {
   try {
-    logger.info(`[PASSPORT] Deserializing user ID: ${id}`);
     const user = await User.findById(id);
-    if (user) {
-      logger.info(`[PASSPORT] User deserialized successfully: ${user.email}`);
-    } else {
-      logger.warn(`[PASSPORT] User not found for ID: ${id}`);
-    }
     done(null, user);
   } catch (error) {
     logger.error('Error deserializing user:', error);

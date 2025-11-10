@@ -11,8 +11,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Export podcasts to JSON
 router.get('/export', async (req, res) => {
   try {
-    const podcasts = await Podcast.find().select('name rssUrl folderName enabled keepEpisodeCount');
-    const settings = await SystemSettings.getSettings();
+    const podcasts = await Podcast.find({ userId: req.user.id }).select('name rssUrl folderName enabled keepEpisodeCount');
+    const settings = await SystemSettings.getSettings(req.user.id);
     
     const exportData = {
       podcasts: podcasts.map(p => ({
@@ -61,8 +61,11 @@ router.post('/import', upload.single('file'), async (req, res) => {
     // Import podcasts
     for (const podcastData of data.podcasts) {
       try {
-        // Check if podcast already exists
-        const existing = await Podcast.findOne({ rssUrl: podcastData.rss_url });
+        // Check if podcast already exists for this user
+        const existing = await Podcast.findOne({ 
+          userId: req.user.id,
+          rssUrl: podcastData.rss_url 
+        });
         
         if (existing) {
           skipped++;
@@ -74,12 +77,14 @@ router.post('/import', upload.single('file'), async (req, res) => {
         try {
           feedData = await parseFeed(podcastData.rss_url);
         } catch (error) {
+          logger.error(`Error parsing RSS feed ${podcastData.rss_url}:`, error);
           errors.push(`Failed to parse RSS feed for "${podcastData.name}": ${error.message}`);
           continue;
         }
         
         // Create podcast
         await Podcast.create({
+          userId: req.user.id,
           name: podcastData.name,
           rssUrl: podcastData.rss_url,
           description: feedData.description,
@@ -92,6 +97,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
         
         imported++;
       } catch (error) {
+        logger.error(`Error importing podcast "${podcastData.name}":`, error);
         errors.push(`Failed to import "${podcastData.name}": ${error.message}`);
       }
     }
@@ -99,7 +105,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
     // Import settings if provided
     if (data.settings) {
       try {
-        const settings = await SystemSettings.getSettings();
+        const settings = await SystemSettings.getSettings(req.user.id);
         
         if (data.settings.check_interval_hours) {
           settings.checkIntervalHours = data.settings.check_interval_hours;
