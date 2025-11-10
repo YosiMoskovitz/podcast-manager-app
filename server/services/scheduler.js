@@ -71,7 +71,8 @@ export async function checkAndDownloadPodcasts() {
             
             // Auto-download new episodes (streams directly to Drive)
             try {
-              await downloadEpisode(episode, podcast);
+              // Pass podcast.userId so downloader can access the correct Drive config and history
+              await downloadEpisode(episode, podcast, podcast.userId);
             } catch (downloadError) {
               logger.error(`Failed to download/upload ${episode.title}:`, downloadError);
             }

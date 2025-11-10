@@ -63,9 +63,14 @@ export async function downloadEpisode(episode, podcast, userId) {
     response.data.on('data', (chunk) => {
       bytesDownloaded += chunk.length;
     });
+    // Add stream error handler for better diagnostics
+    response.data.on('error', (err) => {
+      logger.error(`Audio stream error for ${episode.title}:`, err);
+    });
     
     // Upload stream directly to Google Drive (no local storage)
-    const uploadResult = await uploadStreamToDrive(response.data, filename, podcast);
+    // IMPORTANT: forward userId so cloudStorage can load the correct Drive config
+    const uploadResult = await uploadStreamToDrive(response.data, filename, podcast, userId);
     
     const endTime = new Date();
     const duration = (endTime - startTime) / 1000;
