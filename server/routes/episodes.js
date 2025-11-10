@@ -63,7 +63,7 @@ router.post('/:id/download', async (req, res) => {
     }
     
     // Start download in background
-    downloadEpisode(episode, podcast)
+    downloadEpisode(episode, podcast, req.user.id)
       .catch(err => logger.error('Download/upload failed:', err));
     
     res.json({ message: 'Download started', episodeId: episode._id });
@@ -89,7 +89,7 @@ router.post('/:id/resync', async (req, res) => {
     episode.cloudUrl = null;
     await episode.save();
 
-    downloadEpisode(episode, podcast).catch(err => logger.error('Re-sync failed:', err));
+  downloadEpisode(episode, podcast, req.user.id).catch(err => logger.error('Re-sync failed:', err));
 
     res.json({ message: 'Re-sync started', episodeId: episode._id });
   } catch (error) {

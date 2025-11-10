@@ -5,7 +5,7 @@ import Podcast from '../models/Podcast.js';
 import DownloadHistory from '../models/DownloadHistory.js';
 import { uploadStreamToDrive } from './cloudStorage.js';
 
-export async function downloadEpisode(episode, podcast) {
+export async function downloadEpisode(episode, podcast, userId) {
   const startTime = new Date();
   
   try {
@@ -16,6 +16,7 @@ export async function downloadEpisode(episode, podcast) {
     
     // Create download history record
     const history = await DownloadHistory.create({
+      userId,
       episode: episode._id,
       podcast: podcast._id,
       status: 'started',
@@ -104,6 +105,7 @@ export async function downloadEpisode(episode, podcast) {
     });
     
     await DownloadHistory.create({
+      userId,
       episode: episode._id,
       podcast: episode.podcast,
       status: 'failed',
