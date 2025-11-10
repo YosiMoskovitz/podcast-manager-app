@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../hooks/useToast';
 import { X, Folder, ChevronRight, ChevronDown, Home, Loader, FolderPlus } from 'lucide-react';
 import { getApiBaseUrl } from '../utils/apiUrl';
 
 function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }) {
+  const { toast } = useToast();
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -123,10 +125,10 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
         setNewFolderName('');
         setNewFolderParent(null);
       } else {
-        alert('Failed to create folder: ' + (data.error || 'Unknown error'));
+        toast.error('Failed to create folder: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
-      alert('Failed to create folder: ' + err.message);
+      toast.error('Failed to create folder: ' + err.message);
     } finally {
       setCreatingFolder(false);
     }

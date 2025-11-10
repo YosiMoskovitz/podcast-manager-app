@@ -104,7 +104,13 @@ export async function resyncEpisodesByIds(episodeIds) {
       ep.cloudFileId = null;
       ep.cloudUrl = null;
       await ep.save();
-      downloadEpisode(ep, podcast).catch(() => {});
+      // Pass userId to downloader to ensure download history is recorded correctly
+      try {
+        const userId = ep.userId || null;
+        downloadEpisode(ep, podcast, userId).catch(() => {});
+      } catch (err) {
+        // swallow - we intentionally fire-and-forget downloads
+      }
       started.push(String(ep._id));
     }
   }

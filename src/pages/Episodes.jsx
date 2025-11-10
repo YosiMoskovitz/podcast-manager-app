@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Download, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { getEpisodes, downloadEpisode, resyncEpisode } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { ToastContainer } from '../components/Toast';
 
 function Episodes() {
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const { toasts, removeToast, toast } = useToast();
   
   useEffect(() => {
     fetchEpisodes();
@@ -26,20 +29,20 @@ function Episodes() {
   const handleDownload = async (id, title) => {
     try {
       await downloadEpisode(id);
-      alert(`Download started for "${title}"`);
+      toast.success(`Download started for "${title}"`);
       setTimeout(fetchEpisodes, 2000);
     } catch (error) {
-      alert('Failed to start download: ' + error.response?.data?.error || error.message);
+      toast.error('Failed to start download: ' + (error.response?.data?.error || error.message));
     }
   };
 
   const handleResync = async (id, title) => {
     try {
       await resyncEpisode(id);
-      alert(`Re-sync started for "${title}"`);
+      toast.success(`Re-sync started for "${title}"`);
       setTimeout(fetchEpisodes, 2000);
     } catch (error) {
-      alert('Failed to start re-sync: ' + (error.response?.data?.error || error.message));
+      toast.error('Failed to start re-sync: ' + (error.response?.data?.error || error.message));
     }
   };
   
@@ -82,6 +85,7 @@ function Episodes() {
   
   return (
     <div>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Episodes</h1>
         
@@ -140,6 +144,17 @@ function Episodes() {
                       >
                         <RefreshCw className="w-4 h-4" />
                         Re-sync
+                      </button>
+                    )}
+
+                    {episode.status === 'failed' && (
+                      <button
+                        onClick={() => handleResync(episode._id, episode.title)}
+                        className="btn btn-secondary flex items-center gap-2"
+                        title="Retry failed download"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Retry
                       </button>
                     )}
                   </div>

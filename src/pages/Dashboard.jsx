@@ -149,6 +149,25 @@ function Dashboard() {
       throw error;
     }
   };
+
+  // Handler used by SyncProgressModal to request a bulk retry
+  const handleBulkRetryRequest = async (episodeIds) => {
+    try {
+      if (!Array.isArray(episodeIds) || episodeIds.length === 0) {
+        toast.warning('No failed episodes selected for retry');
+        return;
+      }
+      const result = await resyncEpisodes(episodeIds);
+      const count = result.data?.startedCount ?? episodeIds.length;
+      toast.success(`Re-sync started for ${count} episode(s)`);
+      // Trigger stats refresh
+      fetchStats();
+      return result.data;
+    } catch (error) {
+      toast.error('Failed to start bulk re-sync: ' + (error.response?.data?.error || error.message));
+      throw error;
+    }
+  };
   
   if (loading) {
     return <div className="text-center py-12">Loading...</div>;
@@ -168,6 +187,7 @@ function Dashboard() {
       <SyncProgressModal 
         syncStatus={syncStatus} 
         onClose={() => setSyncStatus(null)}
+        onBulkRetryRequest={handleBulkRetryRequest}
       />
       <VerificationModal
         verificationResult={verificationResult}
