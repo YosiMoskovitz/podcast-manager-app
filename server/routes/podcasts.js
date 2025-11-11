@@ -39,7 +39,7 @@ router.get('/:id', async (req, res) => {
 // Create new podcast
 router.post('/', async (req, res) => {
   try {
-    const { name, rssUrl, folderName, keepEpisodeCount } = req.body;
+    const { name, rssUrl, folderName, driveFolderName, keepEpisodeCount } = req.body;
     
     // Validate RSS feed
     const feedData = await parseFeed(rssUrl);
@@ -52,6 +52,7 @@ router.post('/', async (req, res) => {
       imageUrl: feedData.imageUrl,
       author: feedData.author,
       folderName: folderName || name.replace(/[^a-z0-9]/gi, '_'),
+      driveFolderName: driveFolderName || name, // Default to podcast name
       keepEpisodeCount: keepEpisodeCount || 10
     });
     

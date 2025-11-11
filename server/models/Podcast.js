@@ -19,6 +19,7 @@ const podcastSchema = new mongoose.Schema({
   imageUrl: String,
   author: String,
   folderName: String,
+  driveFolderName: String, // Custom name for Google Drive folder
   enabled: {
     type: Boolean,
     default: true

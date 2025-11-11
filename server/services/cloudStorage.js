@@ -125,6 +125,15 @@ async function verifyFolderExists(folderId) {
 }
 
 export async function uploadStreamToDrive(stream, filename, podcast, userId) {
+  // Ensure drive client is initialized for this user
+  if (!driveClient) {
+    // Try to initialize using provided userId (safe no-op if already initialized)
+    try {
+      await initializeDrive(userId);
+    } catch (initErr) {
+      logger.warn('Failed to auto-initialize Drive client:', initErr);
+    }
+  }
   if (!driveClient) throw new Error('Drive client not initialized. Please configure Google Drive in Settings.');
   try {
     const config = await DriveCredentials.getConfig(userId);
@@ -145,7 +154,8 @@ export async function uploadStreamToDrive(stream, filename, podcast, userId) {
     
     // If no folder ID or folder doesn't exist, get or create it
     if (!podcastFolderId) {
-      podcastFolderId = await getOrCreatePodcastFolder(podcast.name, mainFolderId);
+      const folderName = podcast.driveFolderName || podcast.name;
+      podcastFolderId = await getOrCreatePodcastFolder(folderName, mainFolderId);
       // Update podcast with folder ID
       podcast.driveFolderId = podcastFolderId;
       await podcast.save();
@@ -160,7 +170,36 @@ export async function uploadStreamToDrive(stream, filename, podcast, userId) {
     logger.info('Stream upload successful: ' + filename + ' (' + response.data.id + ')');
     return { fileId: response.data.id, webViewLink: response.data.webViewLink };
   } catch (error) {
-    logger.error('Stream upload failed for ' + filename + ':', error);
+    // Improve diagnostics: log http status, headers and body when available.
+    try {
+      logger.error(`Stream upload failed for ${filename}: ${error && error.message ? error.message : error}`);
+      // Axios / Google API errors may include a response property
+      const resp = error && (error.response || error.result || error.errors || null);
+      if (resp) {
+        // Try to extract status and headers if present
+        const status = resp.status || (resp.statusCode || null);
+        const headers = resp.headers || resp.responseHeaders || null;
+        let body = resp.data || resp.body || resp.response || resp;
+        // If body is an object, stringify a limited preview
+        if (typeof body === 'object') {
+          try { body = JSON.stringify(body); } catch (e) { body = String(body); }
+        }
+        if (typeof body === 'string' && body.length > 2000) {
+          // Truncate long HTML responses but keep the start so we can detect redirects/login pages
+          body = body.substring(0, 2000) + '... [truncated]';
+        }
+        logger.error(`Drive response debug - status: ${status}, headers: ${headers ? JSON.stringify(headers) : 'N/A'}`);
+        logger.error(`Drive response body preview: ${body}`);
+      } else if (error.errors) {
+        // googleapis may expose structured errors array
+        logger.error('Google API errors:', error.errors);
+      } else {
+        // Fallback: log full error
+        logger.error(error);
+      }
+    } catch (logErr) {
+      logger.error('Failed while logging upload error details:', logErr);
+    }
     throw error;
   }
 }

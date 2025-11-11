@@ -30,6 +30,7 @@ function Settings() {
   const [showMigrateConfirm, setShowMigrateConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showFolderBrowser, setShowFolderBrowser] = useState(false);
+  const [folderBrowserMode, setFolderBrowserMode] = useState('select'); // 'select' or 'migrate'
   
   useEffect(() => {
     // Check for OAuth callback with code
@@ -72,18 +73,6 @@ function Settings() {
         toast.success('Google Drive authorized successfully!');
         window.history.replaceState({}, '', '/settings');
         await fetchConfig();
-        // Auto-create Podcasts folder (silently)
-        setTimeout(async () => {
-          try {
-            const folderResponse = await createPodcastsFolder();
-            setFolderIdInput(folderResponse.data.folderId);
-            // Don't show toast here - already showed success above
-            fetchConfig();
-          } catch (error) {
-            // Only show error if folder creation fails
-            toast.error('Failed to create folder: ' + (error.response?.data?.error || error.message));
-          }
-        }, 500);
       } else {
         toast.error('Authorization failed: ' + (data.error || 'Unknown error'));
         window.history.replaceState({}, '', '/settings');
@@ -227,11 +216,6 @@ function Settings() {
   };
   
   const handleCreateFolder = async () => {
-    if (config?.folderId && !useCustomFolder) {
-      toast.info('Podcasts folder already configured');
-      return;
-    }
-    
     setCreatingFolder(true);
     try {
       const response = await createPodcastsFolder();
@@ -259,10 +243,28 @@ function Settings() {
     
     try {
       await setFolderId({ folderId: folderId.trim() });
-      toast.success('Folder ID saved successfully');
+      toast.success('Folder saved successfully');
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to set folder ID: ' + (error.response?.data?.error || error.message));
+      toast.error('Failed to set folder: ' + (error.response?.data?.error || error.message));
+    }
+  };
+  
+  const handleFolderSelect = async (folder) => {
+    setShowFolderBrowser(false);
+    
+    if (folderBrowserMode === 'migrate') {
+      // Migration mode - just store the folder ID for migration
+      setNewFolderId(folder.id);
+    } else {
+      // Initial selection mode - immediately set as main folder
+      try {
+        await setFolderId({ folderId: folder.id, folderName: folder.name });
+        toast.success(`Folder "${folder.name}" selected successfully`);
+        fetchConfig();
+      } catch (error) {
+        toast.error('Failed to set folder: ' + (error.response?.data?.error || error.message));
+      }
     }
   };
   
@@ -613,68 +615,74 @@ function Settings() {
                 </div>
               </div>
               
-              {/* Folder Configuration */}
-          <div className="border rounded-lg p-6">
-            <div className="flex-1">
+              {/* Folder Configuration - MOVED TO TOP */}
+              <div className="border rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-bold mb-4">Podcast Storage Folder</h3>
                 
-                {!config?.folderId && !useCustomFolder ? (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-blue-800 mb-3">
-                      <strong>Recommended:</strong> Auto-create a "Podcasts" folder in your Google Drive root
-                    </p>
-                    <button
-                      onClick={handleCreateFolder}
-                      disabled={!config?.hasToken || creatingFolder}
-                      className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FolderPlus className={`w-4 h-4 ${creatingFolder ? 'animate-spin' : ''}`} />
-                      {creatingFolder ? 'Setting up...' : 'Setup Podcasts Folder'}
-                    </button>
-                    <button
-                      onClick={() => setUseCustomFolder(true)}
-                      className="text-sm text-blue-600 hover:underline mt-2 block"
-                    >
-                      Or use custom folder ID
-                    </button>
+                {!config?.folderId ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3 mb-4">
+                      <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-yellow-900">Folder Required</p>
+                        <p className="text-sm text-yellow-700">
+                          You must select a folder in Google Drive where your podcasts will be stored.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleCreateFolder}
+                        disabled={creatingFolder}
+                        className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                      >
+                        <FolderPlus className={`w-4 h-4 ${creatingFolder ? 'animate-spin' : ''}`} />
+                        {creatingFolder ? 'Setting up...' : 'Create "Podcasts" Folder'}
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          setFolderBrowserMode('select');
+                          setShowFolderBrowser(true);
+                        }}
+                        className="btn btn-secondary flex items-center gap-2 w-full"
+                      >
+                        <Folder className="w-4 h-4" />
+                        Browse & Select Existing Folder
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {useCustomFolder ? (
-                        <>
-                          Enter the folder ID from your Google Drive URL:<br/>
-                          <code className="bg-gray-100 px-2 py-1 rounded text-xs">drive.google.com/drive/folders/<strong>FOLDER_ID_HERE</strong></code>
-                        </>
-                      ) : (
-                        'Your Podcasts folder is configured'
-                      )}
-                    </p>
-                    
-                    <div className="flex gap-3">
-                      <input
-                        type="text"
-                        value={folderId}
-                        onChange={(e) => setFolderIdInput(e.target.value)}
-                        placeholder="Enter Google Drive Folder ID"
-                        className="input flex-1"
-                        disabled={!config?.hasToken || (!useCustomFolder && config?.folderId)}
-                      />
-                      <button 
-                        onClick={handleSetFolder}
-                        disabled={!config?.hasToken}
-                        className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Save
-                      </button>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">Selected Folder:</p>
+                          <p className="text-lg font-bold text-blue-700">{config.folderName || 'Podcasts'}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setFolderBrowserMode('select');
+                            setShowFolderBrowser(true);
+                          }}
+                          className="btn btn-secondary flex items-center gap-2"
+                        >
+                          <Folder className="w-4 h-4" />
+                          Change Folder
+                        </button>
+                      </div>
                     </div>
+                    
+                    <p className="text-xs text-gray-500">
+                      All podcast episodes will be stored in subfolders within this location.
+                    </p>
                   </>
                 )}
               </div>
-          </div>
           
           {/* Actions */}
-          <div className="flex gap-3 pt-6">
+          <div className="flex gap-3">
             <button 
               onClick={handleTest}
               disabled={testing}
@@ -781,45 +789,44 @@ function Settings() {
             {config?.folderId && (
               <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
                 <p className="text-sm text-blue-800">
-                  <strong>Current folder ID:</strong> {config.folderId}
+                  <strong>Current folder:</strong> {config.folderName || 'Podcasts'}
                 </p>
               </div>
             )}
             
-            <div className="flex gap-3 mb-3">
+            <div className="mb-3">
               <button
-                onClick={() => setShowFolderBrowser(true)}
+                onClick={() => {
+                  setFolderBrowserMode('migrate');
+                  setShowFolderBrowser(true);
+                  setNewFolderId(''); // Clear any manual entry when browsing
+                }}
                 disabled={!config?.hasToken || migrating}
-                className="btn btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
               >
                 <Folder className="w-4 h-4" />
-                Browse Folders
+                Browse & Select New Folder
               </button>
-              <span className="text-sm text-gray-500 self-center">or enter folder ID manually:</span>
             </div>
             
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={newFolderId}
-                onChange={(e) => setNewFolderId(e.target.value)}
-                placeholder="Enter new Google Drive folder ID"
-                className="input flex-1"
-                disabled={!config?.hasToken || migrating}
-              />
-              <button
-                onClick={handleMigrateFolder}
-                disabled={!config?.hasToken || !newFolderId.trim() || migrating}
-                className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FolderSync className={`w-4 h-4 ${migrating ? 'animate-spin' : ''}`} />
-                {migrating ? 'Migrating...' : 'Migrate Folder'}
-              </button>
-            </div>
+            {newFolderId && (
+              <div className="bg-green-50 border border-green-200 rounded p-3 mb-3">
+                <p className="text-sm text-green-800">
+                  <strong>New folder selected</strong>
+                </p>
+                <button
+                  onClick={handleMigrateFolder}
+                  disabled={!config?.hasToken || migrating}
+                  className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full mt-2"
+                >
+                  <FolderSync className={`w-4 h-4 ${migrating ? 'animate-spin' : ''}`} />
+                  {migrating ? 'Migrating...' : 'Start Migration'}
+                </button>
+              </div>
+            )}
             
             <p className="text-xs text-gray-500 mt-2">
-              Tip: Use the Browse button to explore your Google Drive, or copy the folder ID from the URL: 
-              <code className="bg-gray-100 px-2 py-1 rounded ml-1">drive.google.com/drive/folders/<strong>FOLDER_ID</strong></code>
+              Use the Browse button to select a new folder location in your Google Drive.
             </p>
           </div>
         </div>
@@ -929,9 +936,7 @@ function Settings() {
       <DriveFolderBrowser
         isOpen={showFolderBrowser}
         onClose={() => setShowFolderBrowser(false)}
-        onSelectFolder={(folder) => {
-          setNewFolderId(folder.id);
-        }}
+        onSelectFolder={handleFolderSelect}
         currentFolderId={config?.folderId}
       />
     </div>

@@ -77,6 +77,7 @@ const driveCredentialsSchema = new mongoose.Schema({
   
   // Configuration
   folderId: String,
+  folderName: String,
   enabled: {
     type: Boolean,
     default: false

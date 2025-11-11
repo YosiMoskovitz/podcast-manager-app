@@ -9,7 +9,7 @@ function Podcasts() {
   const [podcasts, setPodcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [newPodcast, setNewPodcast] = useState({ name: '', rssUrl: '', keepEpisodeCount: 10 });
+  const [newPodcast, setNewPodcast] = useState({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
   
   useEffect(() => {
     fetchPodcasts();
@@ -31,7 +31,7 @@ function Podcasts() {
     try {
       await createPodcast(newPodcast);
       setShowModal(false);
-      setNewPodcast({ name: '', rssUrl: '', keepEpisodeCount: 10 });
+      setNewPodcast({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
       toast.success('Podcast created successfully');
       fetchPodcasts();
     } catch (error) {
@@ -161,7 +161,17 @@ function Podcasts() {
                     type="text"
                     required
                     value={newPodcast.name}
-                    onChange={(e) => setNewPodcast({ ...newPodcast, name: e.target.value })}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setNewPodcast({ 
+                        ...newPodcast, 
+                        name,
+                        // Auto-populate driveFolderName if it's empty or matches the old name
+                        driveFolderName: !newPodcast.driveFolderName || newPodcast.driveFolderName === newPodcast.name 
+                          ? name 
+                          : newPodcast.driveFolderName
+                      });
+                    }}
                     className="input"
                     placeholder="My Favorite Podcast"
                   />
@@ -176,6 +186,19 @@ function Podcasts() {
                     className="input"
                     placeholder="https://..."
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Drive Folder Name</label>
+                  <input
+                    type="text"
+                    value={newPodcast.driveFolderName}
+                    onChange={(e) => setNewPodcast({ ...newPodcast, driveFolderName: e.target.value })}
+                    className="input"
+                    placeholder="Podcast folder name in Google Drive"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    This is the folder name that will be created in your Google Drive. Defaults to podcast name.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Keep Episode Count</label>

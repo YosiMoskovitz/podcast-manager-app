@@ -19,6 +19,7 @@ router.get('/config', async (req, res) => {
       hasToken: !!config.accessToken,
       status: config.status || 'not_configured',
       folderId: config.folderId,
+      folderName: config.folderName,
       enabled: config.enabled,
       errorMessage: config.errorMessage,
       lastSync: config.lastSync
@@ -98,7 +99,8 @@ router.post('/token', upload.single('file'), async (req, res) => {
     await config.save();
     
     // Initialize Drive client
-    await initializeDrive();
+  // Initialize Drive client for this user so server can use Drive immediately
+  await initializeDrive(req.user.id);
     
     logger.info('Google Drive token uploaded successfully');
     
@@ -197,6 +199,9 @@ router.post('/exchange-code', async (req, res) => {
     
     logger.info(`Google Drive authorized successfully for user: ${req.user.email}`);
     
+    // Initialize Drive client so it's ready to use
+    await initializeDrive(req.user.id);
+    
     res.json({ 
       message: 'Google Drive connected successfully!',
       status: 'active'
@@ -210,7 +215,7 @@ router.post('/exchange-code', async (req, res) => {
 // Set Drive folder ID
 router.post('/folder', async (req, res) => {
   try {
-    const { folderId } = req.body;
+    const { folderId, folderName } = req.body;
     
     if (!folderId) {
       return res.status(400).json({ error: 'Folder ID is required' });
@@ -218,11 +223,12 @@ router.post('/folder', async (req, res) => {
     
     const config = await DriveCredentials.getConfig(req.user.id);
     config.folderId = folderId;
+    config.folderName = folderName || null;
     await config.save();
     
-    logger.info(`Google Drive folder ID set: ${folderId}`);
+    logger.info(`Google Drive folder set: ${folderName || folderId}`);
     
-    res.json({ message: 'Folder ID updated successfully' });
+    res.json({ message: 'Folder updated successfully' });
   } catch (error) {
     logger.error('Error setting folder ID:', error);
     res.status(500).json({ error: 'Failed to set folder ID' });
@@ -357,6 +363,7 @@ router.post('/create-folder', async (req, res) => {
     
     // Save folder ID to config
     config.folderId = folderId;
+    config.folderName = 'Podcasts';
     await config.save();
     
     res.json({ 
@@ -386,6 +393,7 @@ router.delete('/config', async (req, res) => {
     config.credentialsJson = null;
     config.tokenJson = null;
     config.folderId = null;
+    config.folderName = null;
     config.enabled = false;
     config.status = 'not_configured';
     config.errorMessage = null;
