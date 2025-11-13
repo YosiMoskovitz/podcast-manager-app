@@ -1,0 +1,398 @@
+{
+  "common": {
+    "appName": "Podcast Manager",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh",
+    "settings": "Settings",
+    "logout": "Logout",
+    "unknownError": "Unknown error"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "podcasts": "Podcasts",
+    "episodes": "Episodes",
+    "statistics": "Statistics",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "stats": {
+      "activePodcasts": "Active Podcasts",
+      "totalEpisodes": "Total Episodes",
+      "downloaded": "Downloaded",
+      "pending": "Pending",
+      "failed": "Failed",
+      "storageUsed": "Storage Used",
+      "downloadsToday": "Downloads Today",
+      "quickStats": "Quick Stats",
+      "successRate": "Success Rate",
+      "systemStatus": "System Status",
+      "downloadedEpisodes": "Downloaded Episodes",
+      "backend": "Backend",
+      "online": "Online",
+      "database": "Database",
+      "lastUpdated": "Last Updated"
+    },
+    "actions": {
+      "checkNow": "Check Now",
+      "checking": "Checking...",
+      "verifyFiles": "Verify Files",
+      "verifying": "Verifying...",
+      "retryFailed": "Retry Failed",
+      "selectAll": "Select All",
+      "clearAll": "Clear All",
+      "starting": "Starting...",
+      "retrySelected": "Retry Selected"
+    },
+    "sync": {
+      "inProgress": "Sync in progress",
+      "started": "Manual check started!",
+      "alreadyRunning": "Sync is already in progress",
+      "failed": "Failed to start manual check"
+    },
+    "drive": {
+      "connected": "Connected",
+      "notConnected": "Not Connected",
+      "status": "Drive Status",
+      "needsAuth": "Needs Auth",
+      "error": "Error"
+    },
+    "verification": {
+      "allSynced": "All files are synced!",
+      "missingFiles": "Found {{count}} episode(s) missing from Drive",
+      "failed": "Failed to verify files"
+    },
+    "messages": {
+      "resyncStarted": "Re-sync started for {{count}} episode(s)",
+      "resyncFailed": "Failed to re-sync",
+      "bulkResyncFailed": "Failed to start bulk re-sync",
+      "noEpisodesSelected": "No episodes selected",
+      "noFailedEpisodesSelected": "No failed episodes selected for retry",
+      "loadFailedEpisodesFailed": "Failed to load failed episodes",
+      "retryFailed": "Failed to retry"
+    },
+    "retry": {
+      "title": "Retry Failed Episodes",
+      "description": "Select the episodes you want to retry downloading/syncing to Google Drive.",
+      "loading": "Loading failed episodes...",
+      "noFailed": "No failed episodes found",
+      "selected": "{{count}} of {{total}} selected"
+    }
+  },
+  "podcasts": {
+    "title": "Podcasts",
+    "addNew": "Add Podcast",
+    "addNewTitle": "Add New Podcast",
+    "noPodcasts": "No podcasts yet",
+    "noPodcastsDescription": "Click \"Add Podcast\" to get started",
+    "noImage": "No Image",
+  "noImagePlaceholder": "Podcasts",
+    "fields": {
+      "name": "Podcast Name",
+      "rssUrl": "RSS Feed URL",
+      "author": "Author",
+      "episodes": "Episodes",
+      "downloaded": "Downloaded",
+      "driveFolderName": "Drive Folder Name",
+      "keepEpisodeCount": "Keep Episode Count"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "create": "Create",
+      "delete": "Delete",
+      "enabled": "enabled",
+      "disabled": "disabled"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "messages": {
+      "createSuccess": "Podcast created successfully",
+      "createFailed": "Failed to create podcast",
+      "deleteConfirm": "Delete podcast \"{{name}}\"? This will also delete all episodes.",
+      "deleteSuccess": "Deleted podcast \"{{name}}\"",
+      "deleteFailed": "Failed to delete podcast",
+      "toggleSuccess": "Podcast {{status}}",
+      "toggleFailed": "Failed to update podcast",
+      "refreshSuccess": "Refreshed \"{{name}}\": {{count}} new episodes found",
+      "refreshFailed": "Failed to refresh podcast"
+    },
+    "placeholders": {
+      "name": "My Favorite Podcast",
+      "rssUrl": "https://...",
+      "driveFolderName": "Podcast folder name in Google Drive"
+    },
+    "help": {
+      "driveFolderName": "This is the folder name that will be created in your Google Drive. Defaults to podcast name.",
+      "keepEpisodeCount": "Number of recent episodes to keep in cloud storage",
+      "keepEpisodeCountTip": "💡 Tip: Set to <strong>0</strong> to keep all episodes (unlimited)"
+    }
+  },
+  "episodes": {
+    "title": "Episodes",
+    "noEpisodes": "No episodes found",
+    "noEpisodesDescription": "Add some podcasts and check for new episodes",
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "status": {
+      "pending": "Pending",
+      "downloading": "Downloading",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "actions": {
+      "download": "Download",
+      "resync": "Re-sync",
+      "retry": "Retry"
+    },
+    "titles": {
+      "resync": "Re-sync episode to Drive",
+      "retry": "Retry failed download"
+    },
+    "messages": {
+      "downloadStarted": "Download started for \"{{title}}\"",
+      "downloadFailed": "Failed to start download",
+      "resyncStarted": "Re-sync started for \"{{title}}\"",
+      "resyncFailed": "Failed to start re-sync"
+    },
+    "error": "Error",
+    "unknown": "Unknown"
+  },
+  "statistics": {
+    "title": "Statistics",
+    "episodesByPodcast": "Episodes by Podcast",
+    "overallStatus": "Overall Status",
+    "podcastDetails": "Podcast Details",
+    "recentDownloadHistory": "Recent Download History",
+    "noDownloadHistory": "No download history yet",
+    "unknownEpisode": "Unknown Episode",
+    "unknownPodcast": "Unknown Podcast",
+    "table": {
+      "podcast": "Podcast",
+      "totalEpisodes": "Total Episodes",
+      "downloaded": "Downloaded",
+      "failed": "Failed",
+      "storage": "Storage"
+    },
+    "status": {
+      "downloaded": "Downloaded",
+      "failed": "Failed",
+      "pending": "Pending",
+      "started": "Started",
+      "completed": "completed"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "system": {
+      "title": "System Settings",
+      "subtitle": "Configure global app behavior",
+      "autoCheck": {
+        "label": "Enable Automatic Checking",
+        "description": "When enabled, your podcasts will be checked automatically every {{hours}} hours for new episodes. You can still manually check anytime using the \"Check Now\" button.",
+        "disabled": "Auto-check is currently OFF. Enable it to automatically download new episodes."
+      },
+      "maxEpisodes": {
+        "label": "Max Episodes Per Check",
+        "description": "How many recent episodes to check and download when a podcast is scanned"
+      },
+      "checkInterval": {
+        "label": "Check Interval (hours)",
+        "description": "How often to automatically check for new episodes (only when auto-check is enabled)",
+        "requiresAutoCheck": "(requires auto-check enabled)",
+        "options": {
+          "1": "Every hour",
+          "2": "Every 2 hours",
+          "4": "Every 4 hours",
+          "6": "Every 6 hours",
+          "12": "Every 12 hours",
+          "24": "Once a day",
+          "48": "Every 2 days",
+          "168": "Once a week"
+        }
+      },
+      "maxConcurrent": {
+        "label": "Max Concurrent Downloads",
+        "description": "Number of episodes to download simultaneously"
+      },
+      "actions": {
+        "export": "Export Data",
+        "exporting": "Exporting...",
+        "import": "Import Data",
+        "importing": "Importing...",
+        "save": "Save Settings",
+        "saving": "Saving..."
+      },
+      "defaultKeep": {
+        "label": "Default Keep Episode Count",
+        "description": "Default number of episodes to keep for new podcasts (0 = unlimited)"
+      },
+      "saveSuccess": "System settings saved successfully",
+      "saveFailed": "Failed to save settings: {{error}}",
+      "exportSuccess": "Podcasts exported successfully",
+      "exportFailed": "Failed to export: {{error}}",
+      "importSuccess": "Import successful: {{imported}} podcasts imported, {{skipped}} skipped",
+      "importFailed": "Failed to import: {{error}}",
+      "importCompletedWithErrors": "Import completed with errors: {{imported}} imported, {{skipped}} skipped, {{errors}} errors"
+    },
+    "drive": {
+      "title": "Google Drive Integration",
+      "subtitle": "Upload podcast episodes to your personal Google Drive",
+      "connected": "Connected",
+      "notConnected": "Not Connected",
+      "advanced": {
+        "title": "Advanced Drive Settings",
+        "subtitle": "Additional configuration options",
+        "legacyTitle": "Advanced: Manual Credential Upload (Legacy)",
+        "legacyDescription": "These options are for advanced users only. Most users don't need this.",
+        "uploadCredentials": "Upload credentials.json",
+        "uploadToken": "Upload token.json",
+        "uploadCredentialsFailed": "Failed to upload credentials: {{error}}",
+        "uploadTokenFailed": "Failed to upload token: {{error}}"
+      },
+      "connect": {
+        "title": "Connect Your Google Drive",
+        "description": "Click the button below to securely connect your Google Drive account. You'll be redirected to Google to authorize access.",
+        "button": "Connect Google Drive",
+        "note": "Note: Google OAuth credentials must be configured by the app administrator",
+        "getAuthUrlFailed": "Failed to get authorization URL: {{error}}"
+      },
+      "folder": {
+        "title": "Podcast Storage Folder",
+        "required": "Folder Required",
+        "requiredDescription": "You must select a folder in Google Drive where your podcasts will be stored.",
+        "selected": "Selected Folder:",
+        "create": "Create \"Podcasts\" Folder",
+        "creating": "Setting up...",
+        "browse": "Browse & Select Existing Folder",
+        "change": "Change Folder",
+        "description": "All podcast episodes will be stored in subfolders within this location.",
+        "createSuccess": "Podcasts folder created successfully!",
+        "foundExisting": "Found and connected to existing Podcasts folder!",
+        "accessFailed": "Failed to access folder: {{error}}",
+        "enterFolderId": "Please enter a folder ID",
+        "selectedSuccess": "Folder \"{{name}}\" selected successfully",
+        "saved": "Folder saved successfully"
+      },
+      "actions": {
+        "test": "Test Connection",
+        "testing": "Testing...",
+        "disconnect": "Disconnect Drive",
+        "reset": "Reset Configuration",
+        "toggleFailed": "Failed to toggle Drive: {{error}}"
+      },
+      "resetConfirm": {
+        "title": "Reset Google Drive Configuration?",
+        "messageIntro": "This will remove all Google Drive settings including:",
+        "items": [
+          "OAuth credentials",
+          "Access tokens",
+          "Folder configuration"
+        ],
+        "finalWarning": "This action cannot be undone!"
+      },
+      "status": {
+        "authorized": "Google Drive authorized successfully!",
+        "authFailed": "Authorization failed: {{error}}",
+        "testSuccess": "{{message}} Connected as: {{user}}",
+        "testFailed": "Connection test failed: {{error}}",
+        "resetSuccess": "Google Drive configuration reset successfully",
+        "resetFailed": "Failed to reset configuration: {{error}}",
+        "not_configured": "Not Configured",
+        "credentials_uploaded": "Credentials Uploaded",
+        "needs_authorization": "Needs Authorization",
+        "active": "Active",
+        "error": "Error"
+      }
+    },
+    "data": {
+      "title": "Data Management",
+      "subtitle": "Manage episode data and storage",
+      "clear": {
+        "title": "Clear All Episodes Data",
+        "description": "This will delete all episodes from the database and all corresponding files from Google Drive. The sync process will start fresh on the next run. This action cannot be undone!",
+        "button": "Clear All Episodes Data",
+        "clearing": "Clearing...",
+        "confirmTitle": "Clear All Episodes Data?",
+        "confirmMessage": "This will:",
+  "confirmContinue": "Continue",
+        "confirmList": [
+          "Delete all episodes from the database",
+          "Delete all podcast files from Google Drive",
+          "Allow the sync to start fresh"
+        ],
+        "finalWarning": "This action CANNOT be undone!",
+        "finalConfirmTitle": "FINAL CONFIRMATION",
+        "finalConfirmMessage": "All episode data and files will be permanently deleted. Are you absolutely sure?",
+        "finalConfirmButton": "Yes, Delete Everything",
+        "resultMessage": "Episodes cleared: {{episodesDeleted}} episodes, {{filesDeleted}} files deleted, {{podcastsReset}} podcasts reset",
+        "cleanupErrors": "Some errors occurred during cleanup: {{count}} errors",
+        "failed": "Failed to clear episodes: {{error}}"
+      },
+      "migrate": {
+        "title": "Migrate Main Podcast Folder",
+        "description": "Change the main podcast folder location in Google Drive. All podcast subfolders will be moved to the new location. This may take time depending on the number of podcasts.",
+        "currentFolder": "Current folder:",
+        "browseButton": "Browse & Select New Folder",
+        "newFolderSelected": "New folder selected",
+        "startButton": "Start Migration",
+        "migrating": "Migrating...",
+        "note": "Use the Browse button to select a new folder location in your Google Drive.",
+        "enterNewFolder": "Please enter a new folder ID",
+        "sameAsCurrent": "New folder is the same as the current folder",
+        "success": "Migration successful: {{migrated}} podcast folders moved",
+        "errors": "Some errors occurred: {{count}} errors",
+        "failed": "Failed to migrate folder: {{error}}"
+      }
+    },
+    "help": {
+      "title": "How It Works",
+      "simpleSetupTitle": "Simple Setup:",
+      "simpleSetup": "Just click the \"Connect Google Drive\" button above. You'll be redirected to Google to securely authorize access to your Drive.",
+      "whatWeAccessTitle": "What We Access:",
+      "whatWeAccess": "The app can only create and access files it creates. It cannot see or modify your other Drive files.",
+      "yourDataTitle": "Your Data:",
+      "yourData": "Podcast episodes are uploaded directly to your personal Google Drive account."
+    },
+    "language": {
+      "label": "Language",
+      "english": "English",
+      "hebrew": "Hebrew"
+    }
+  },
+  "login": {
+    "title": "Podcast Manager",
+    "subtitle": "Manage your podcast RSS feeds with automated downloads",
+    "button": "Sign in with Google",
+    "disclaimer": "By signing in, you agree to securely authenticate via your Google account. We only access your basic profile information.",
+    "errors": {
+      "authFailed": "Authentication failed. Please try again.",
+      "general": "An error occurred during login."
+    }
+  },
+  "toast": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  }
+}

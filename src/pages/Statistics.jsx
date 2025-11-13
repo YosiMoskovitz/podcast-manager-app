@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import { getPodcastStats, getDownloadHistory } from '../services/api';
 
 function Statistics() {
+  const { t } = useTranslation();
   const [podcastStats, setPodcastStats] = useState([]);
   const [downloadHistory, setDownloadHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ function Statistics() {
   };
   
   if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return <div className="text-center py-12">{t('common.loading')}</div>;
   }
   
   const chartData = podcastStats.map(stat => ({
@@ -38,9 +40,9 @@ function Statistics() {
   }));
   
   const statusData = [
-    { name: 'Downloaded', value: podcastStats.reduce((sum, s) => sum + s.downloaded, 0), color: '#10b981' },
-    { name: 'Failed', value: podcastStats.reduce((sum, s) => sum + s.failed, 0), color: '#ef4444' },
-    { name: 'Pending', value: podcastStats.reduce((sum, s) => sum + (s.totalEpisodes - s.downloaded - s.failed), 0), color: '#6366f1' }
+    { name: t('statistics.status.downloaded'), value: podcastStats.reduce((sum, s) => sum + s.downloaded, 0), color: '#10b981' },
+    { name: t('statistics.status.failed'), value: podcastStats.reduce((sum, s) => sum + s.failed, 0), color: '#ef4444' },
+    { name: t('statistics.status.pending'), value: podcastStats.reduce((sum, s) => sum + (s.totalEpisodes - s.downloaded - s.failed), 0), color: '#6366f1' }
   ];
   
   const formatBytes = (bytes) => {
@@ -53,11 +55,11 @@ function Statistics() {
   
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8">Statistics</h1>
+      <h1 className="text-3xl font-bold mb-8">{t('statistics.title')}</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="card">
-          <h2 className="text-xl font-bold mb-4">Episodes by Podcast</h2>
+          <h2 className="text-xl font-bold mb-4">{t('statistics.episodesByPodcast')}</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -65,14 +67,14 @@ function Statistics() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="downloaded" fill="#10b981" name="Downloaded" />
-              <Bar dataKey="failed" fill="#ef4444" name="Failed" />
+              <Bar dataKey="downloaded" fill="#10b981" name={t('statistics.status.downloaded')} />
+              <Bar dataKey="failed" fill="#ef4444" name={t('statistics.status.failed')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
         
         <div className="card">
-          <h2 className="text-xl font-bold mb-4">Overall Status</h2>
+          <h2 className="text-xl font-bold mb-4">{t('statistics.overallStatus')}</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -96,16 +98,16 @@ function Statistics() {
       </div>
       
       <div className="card mb-8">
-        <h2 className="text-xl font-bold mb-4">Podcast Details</h2>
+        <h2 className="text-xl font-bold mb-4">{t('statistics.podcastDetails')}</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-3 px-4">Podcast</th>
-                <th className="text-right py-3 px-4">Total Episodes</th>
-                <th className="text-right py-3 px-4">Downloaded</th>
-                <th className="text-right py-3 px-4">Failed</th>
-                <th className="text-right py-3 px-4">Storage</th>
+                <th className="text-left py-3 px-4">{t('statistics.table.podcast')}</th>
+                <th className="text-right py-3 px-4">{t('statistics.table.totalEpisodes')}</th>
+                <th className="text-right py-3 px-4">{t('statistics.table.downloaded')}</th>
+                <th className="text-right py-3 px-4">{t('statistics.table.failed')}</th>
+                <th className="text-right py-3 px-4">{t('statistics.table.storage')}</th>
               </tr>
             </thead>
             <tbody>
@@ -129,13 +131,13 @@ function Statistics() {
       </div>
       
       <div className="card">
-        <h2 className="text-xl font-bold mb-4">Recent Download History</h2>
+        <h2 className="text-xl font-bold mb-4">{t('statistics.recentDownloadHistory')}</h2>
         <div className="space-y-3">
           {downloadHistory.map(history => (
             <div key={history._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex-1">
-                <p className="font-medium">{history.episode?.title || 'Unknown Episode'}</p>
-                <p className="text-sm text-gray-600">{history.podcast?.name || 'Unknown Podcast'}</p>
+                <p className="font-medium">{history.episode?.title || t('statistics.unknownEpisode')}</p>
+                <p className="text-sm text-gray-600">{history.podcast?.name || t('statistics.unknownPodcast')}</p>
               </div>
               <div className="text-right">
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
@@ -143,7 +145,7 @@ function Statistics() {
                   history.status === 'failed' ? 'bg-red-100 text-red-700' :
                   'bg-blue-100 text-blue-700'
                 }`}>
-                  {history.status}
+                  {t(`statistics.status.${history.status}`)}
                 </span>
                 <p className="text-xs text-gray-500 mt-1">
                   {new Date(history.createdAt).toLocaleString()}
@@ -153,7 +155,7 @@ function Statistics() {
           ))}
           
           {downloadHistory.length === 0 && (
-            <p className="text-center text-gray-500 py-4">No download history yet</p>
+            <p className="text-center text-gray-500 py-4">{t('statistics.noDownloadHistory')}</p>
           )}
         </div>
       </div>

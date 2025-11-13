@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
+  const { t } = useTranslation();
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -19,18 +21,18 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Podcast Manager
+            {t('login.title')}
           </h1>
           <p className="text-gray-600">
-            Manage your podcast RSS feeds with automated downloads
+            {t('login.subtitle')}
           </p>
         </div>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
             {error === 'auth_failed' ? 
-              'Authentication failed. Please try again.' : 
-              'An error occurred during login.'}
+              t('login.errors.authFailed') : 
+              t('login.errors.general')}
           </div>
         )}
 
@@ -57,13 +59,12 @@ export default function Login() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="text-sm font-medium">Sign in with Google</span>
+            <span className="text-sm font-medium">{t('login.button')}</span>
           </button>
         </div>
 
         <p className="text-xs text-gray-500 text-center mt-8">
-          By signing in, you agree to securely authenticate via your Google account.
-          We only access your basic profile information.
+          {t('login.disclaimer')}
         </p>
       </div>
     </div>

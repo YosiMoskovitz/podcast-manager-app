@@ -44,7 +44,8 @@ export async function initializeDrive(userId) {
     
     // Handle token refresh
     oauth2Client.on('tokens', async (tokens) => {
-      logger.info(`Google Drive tokens refreshed for user ${userId}`);
+      // Token refresh is useful but can be frequent; log at debug level so it only appears when debugging
+      logger.debug(`Google Drive tokens refreshed for user ${userId}`);
       if (tokens.access_token) config.accessToken = tokens.access_token;
       if (tokens.refresh_token) config.refreshToken = tokens.refresh_token;
       if (tokens.expiry_date) config.tokenExpiry = new Date(tokens.expiry_date);
@@ -56,7 +57,7 @@ export async function initializeDrive(userId) {
     config.lastSync = new Date();
     await config.save();
     
-    logger.info(`Google Drive client initialized for user ${userId}`);
+  logger.info(`Google Drive client initialized for user ${userId}`);
     return driveClient;
   } catch (error) {
     logger.error('Failed to initialize Google Drive:', error);
@@ -67,8 +68,9 @@ export async function initializeDrive(userId) {
 export async function createFolder(folderName, parentFolderId) {
   if (!driveClient) return null;
   try {
-    const response = await driveClient.files.create({ requestBody: { name: folderName, mimeType: 'application/vnd.google-apps.folder', parents: parentFolderId ? [parentFolderId] : [] }, fields: 'id, name' });
-    logger.info('Created folder: ' + folderName + ' (' + response.data.id + ')');
+  const response = await driveClient.files.create({ requestBody: { name: folderName, mimeType: 'application/vnd.google-apps.folder', parents: parentFolderId ? [parentFolderId] : [] }, fields: 'id, name' });
+  // Folder creation is informative but not critical; reduce noise by using debug
+  logger.debug('Created folder: ' + folderName + ' (' + response.data.id + ')');
     return response.data.id;
   } catch (error) {
     logger.error('Failed to create folder ' + folderName + ':', error);
@@ -88,8 +90,8 @@ export async function getOrCreatePodcastFolder(podcastName, mainFolderId) {
     
     if (searchResponse.data.files && searchResponse.data.files.length > 0) {
       // Folder exists, return its ID
-      const folderId = searchResponse.data.files[0].id;
-      logger.info(`Using existing folder for podcast "${podcastName}": ${folderId}`);
+  const folderId = searchResponse.data.files[0].id;
+  logger.debug(`Using existing folder for podcast "${podcastName}": ${folderId}`);
       return folderId;
     } else {
       // Create new folder
@@ -101,8 +103,8 @@ export async function getOrCreatePodcastFolder(podcastName, mainFolderId) {
         },
         fields: 'id, name'
       });
-      const folderId = response.data.id;
-      logger.info(`Created new folder for podcast "${podcastName}": ${folderId}`);
+  const folderId = response.data.id;
+  logger.debug(`Created new folder for podcast "${podcastName}": ${folderId}`);
       return folderId;
     }
   } catch (error) {
@@ -161,14 +163,19 @@ export async function uploadStreamToDrive(stream, filename, podcast, userId) {
       await podcast.save();
     }
     
-    logger.info('Streaming to Google Drive: ' + filename + ' -> ' + podcast.name + ' (folder: ' + podcastFolderId + ')');
+    // Streaming operations can be very frequent; emit at debug level to avoid log spam
+    logger.debug('Streaming to Google Drive: ' + filename + ' -> ' + podcast.name + ' (folder: ' + podcastFolderId + ')');
     const response = await driveClient.files.create({ 
       requestBody: { name: filename, parents: [podcastFolderId] }, 
       media: { mimeType: 'audio/mpeg', body: stream }, 
       fields: 'id, name, webViewLink, size' 
     });
-    logger.info('Stream upload successful: ' + filename + ' (' + response.data.id + ')');
-    return { fileId: response.data.id, webViewLink: response.data.webViewLink };
+    logger.debug('Stream upload successful: ' + filename + ' (' + response.data.id + ')');
+    return { 
+      fileId: response.data.id, 
+      webViewLink: response.data.webViewLink,
+      size: parseInt(response.data.size) || 0
+    };
   } catch (error) {
     // Improve diagnostics: log http status, headers and body when available.
     try {
@@ -231,7 +238,8 @@ export async function deleteFile(fileId) {
   if (!driveClient) return;
   try {
     await driveClient.files.delete({ fileId });
-    logger.info('Deleted file from Drive: ' + fileId);
+    // Deletions can be frequent during cleanup; treat as debug-level events
+    logger.debug('Deleted file from Drive: ' + fileId);
   } catch (error) {
     logger.error('Failed to delete file ' + fileId + ':', error);
     throw error;
@@ -247,6 +255,7 @@ export async function cleanupOldEpisodes(podcast, keepCount) {
         await Episode.findByIdAndUpdate(episode._id, { cloudFileId: null, cloudUrl: null });
       }
     }
+    // High-level summary of cleanup kept at info level since it's a meaningful operation
     logger.info('Cleaned up ' + episodes.length + ' old episodes for ' + podcast.name);
   } catch (error) {
     logger.error('Failed to cleanup old episodes for ' + podcast.name + ':', error);

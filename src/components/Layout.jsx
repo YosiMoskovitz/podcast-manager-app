@@ -1,29 +1,35 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Radio, List, BarChart3, Home, Settings, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 function Layout({ children }) {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   
   const navItems = [
-    { path: '/', icon: Home, label: 'Dashboard' },
-    { path: '/podcasts', icon: Radio, label: 'Podcasts' },
-    { path: '/episodes', icon: List, label: 'Episodes' },
-    { path: '/statistics', icon: BarChart3, label: 'Statistics' },
-    { path: '/settings', icon: Settings, label: 'Settings' }
+    { path: '/', icon: Home, label: t('nav.dashboard') },
+    { path: '/podcasts', icon: Radio, label: t('nav.podcasts') },
+    { path: '/episodes', icon: List, label: t('nav.episodes') },
+    { path: '/statistics', icon: BarChart3, label: t('nav.statistics') },
+    { path: '/settings', icon: Settings, label: t('nav.settings') }
   ];
   
   return (
     <div className="min-h-screen flex">
       {/* Sidebar - Fixed positioning */}
-      <aside className="w-64 min-w-64 fixed left-0 top-0 h-screen bg-gradient-to-b from-primary to-secondary text-white flex flex-col">
+      <aside className="w-64 min-w-64 fixed start-0 top-0 h-screen bg-gradient-to-b from-primary to-secondary text-white flex flex-col">
         {/* Header */}
         <div className="p-6 flex-shrink-0">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Radio className="w-7 h-7 flex-shrink-0" />
-            <span className="truncate">Podcast Manager</span>
-          </h1>
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Radio className="w-7 h-7 flex-shrink-0" />
+              <span className="truncate">{t('common.appName')}</span>
+            </h1>
+          </div>
+          <LanguageSwitcher />
         </div>
         
         {/* Navigation - Scrollable if needed */}
@@ -68,13 +74,13 @@ function Layout({ children }) {
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm"
           >
             <LogOut className="w-4 h-4" />
-            <span>Logout</span>
+            <span>{t('common.logout')}</span>
           </button>
         </div>
       </aside>
       
       {/* Main content - Offset by sidebar width */}
-      <main className="flex-1 ml-64 p-8 overflow-y-auto">
+      <main className="flex-1 ms-64 p-8 overflow-y-auto">
         {children}
       </main>
     </div>

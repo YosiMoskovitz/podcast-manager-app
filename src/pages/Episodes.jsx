@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Download, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getEpisodes, downloadEpisode, resyncEpisode } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 
 function Episodes() {
+  const { t } = useTranslation();
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -29,20 +31,20 @@ function Episodes() {
   const handleDownload = async (id, title) => {
     try {
       await downloadEpisode(id);
-      toast.success(`Download started for "${title}"`);
+      toast.success(t('episodes.messages.downloadStarted', { title }));
       setTimeout(fetchEpisodes, 2000);
     } catch (error) {
-      toast.error('Failed to start download: ' + (error.response?.data?.error || error.message));
+      toast.error(t('episodes.messages.downloadFailed') + ': ' + (error.response?.data?.error || error.message));
     }
   };
 
   const handleResync = async (id, title) => {
     try {
       await resyncEpisode(id);
-      toast.success(`Re-sync started for "${title}"`);
+      toast.success(t('episodes.messages.resyncStarted', { title }));
       setTimeout(fetchEpisodes, 2000);
     } catch (error) {
-      toast.error('Failed to start re-sync: ' + (error.response?.data?.error || error.message));
+      toast.error(t('episodes.messages.resyncFailed') + ': ' + (error.response?.data?.error || error.message));
     }
   };
   
@@ -60,14 +62,14 @@ function Episodes() {
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${badge.color}`}>
         <Icon className="w-4 h-4" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {t(`episodes.status.${status}`)}
       </span>
     );
   };
   
   const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    return new Date(dateString).toLocaleDateString('en-US', { 
+    if (!dateString) return t('episodes.unknown');
+    return new Date(dateString).toLocaleDateString(undefined, { 
       month: 'short', 
       day: 'numeric', 
       year: 'numeric' 
@@ -80,14 +82,14 @@ function Episodes() {
   };
   
   if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return <div className="text-center py-12">{t('common.loading')}</div>;
   }
   
   return (
     <div>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Episodes</h1>
+        <h1 className="text-3xl font-bold">{t('episodes.title')}</h1>
         
         <div className="flex gap-2">
           {['all', 'pending', 'completed', 'failed'].map(status => (
@@ -96,7 +98,7 @@ function Episodes() {
               onClick={() => setFilter(status)}
               className={`btn ${filter === status ? 'btn-primary' : 'btn-secondary'}`}
             >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {t(`episodes.filters.${status}`)}
             </button>
           ))}
         </div>
@@ -133,17 +135,17 @@ function Episodes() {
                         className="btn btn-primary flex items-center gap-2"
                       >
                         <Download className="w-4 h-4" />
-                        Download
+                        {t('episodes.actions.download')}
                       </button>
                     )}
                     {(episode.downloaded && !episode.cloudFileId) && (
                       <button
                         onClick={() => handleResync(episode._id, episode.title)}
                         className="btn btn-secondary flex items-center gap-2"
-                        title="Re-sync episode to Drive"
+                        title={t('episodes.titles.resync')}
                       >
                         <RefreshCw className="w-4 h-4" />
-                        Re-sync
+                        {t('episodes.actions.resync')}
                       </button>
                     )}
 
@@ -151,10 +153,10 @@ function Episodes() {
                       <button
                         onClick={() => handleResync(episode._id, episode.title)}
                         className="btn btn-secondary flex items-center gap-2"
-                        title="Retry failed download"
+                        title={t('episodes.titles.retry')}
                       >
                         <RefreshCw className="w-4 h-4" />
-                        Retry
+                        {t('episodes.actions.retry')}
                       </button>
                     )}
                   </div>
@@ -168,7 +170,7 @@ function Episodes() {
                 
                 {episode.errorMessage && (
                   <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                    Error: {episode.errorMessage}
+                    {t('episodes.error')}: {episode.errorMessage}
                   </div>
                 )}
               </div>
@@ -179,8 +181,8 @@ function Episodes() {
       
       {episodes.length === 0 && (
         <div className="text-center py-12 text-gray-500">
-          <p className="text-lg mb-2">No episodes found</p>
-          <p className="text-sm">Add some podcasts and check for new episodes</p>
+          <p className="text-lg mb-2">{t('episodes.noEpisodes')}</p>
+          <p className="text-sm">{t('episodes.noEpisodesDescription')}</p>
         </div>
       )}
     </div>

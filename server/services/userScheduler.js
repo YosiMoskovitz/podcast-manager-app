@@ -9,6 +9,7 @@ import { downloadEpisode } from './downloader.js';
 import { cleanupOldEpisodes } from './cloudStorage.js';
 import { logger } from '../utils/logger.js';
 import { initializeDrive } from './cloudStorage.js';
+import syncStatus from './syncStatus.js';
 
 // Track which users are currently being processed to avoid overlap
 const processingUsers = new Set();
@@ -145,6 +146,9 @@ async function processUserPodcasts(userId, userEmail) {
     
     logger.info(`Checking ${podcasts.length} podcasts for ${userEmail} (max ${maxEpisodes} episodes each)`);
     
+    // Start sync status tracking so the UI can show progress
+    syncStatus.startSync(podcasts.length);
+    
     let totalNewEpisodes = 0;
     
     for (const podcast of podcasts) {
@@ -199,12 +203,17 @@ async function processUserPodcasts(userId, userEmail) {
           await cleanupOldEpisodes(podcast, podcast.keepEpisodeCount);
         }
         
+        // Update sync status for this podcast
+        syncStatus.updatePodcast(podcast.name, 'success', newCount);
+        
         if (newCount > 0) {
           logger.info(`[${userEmail}] Found ${newCount} new episodes for ${podcast.name}`);
         }
         
       } catch (error) {
         logger.error(`[${userEmail}] Error processing ${podcast.name}:`, error);
+        // Update sync status with error
+        syncStatus.updatePodcast(podcast.name, 'failed', 0, error.message);
       }
     }
     
@@ -213,6 +222,8 @@ async function processUserPodcasts(userId, userEmail) {
   } catch (error) {
     logger.error(`Error processing podcasts for ${userEmail}:`, error);
   } finally {
+    // End sync status tracking
+    syncStatus.endSync();
     // Remove user from processing set
     processingUsers.delete(userId);
   }
@@ -293,6 +304,11 @@ async function updateUserDailyStats(userId) {
 export async function triggerManualCheckForUser(userId, userEmail) {
   if (processingUsers.has(userId)) {
     throw new Error('A check is already in progress for this user');
+  }
+  
+  // Check if sync is already running (global check)
+  if (!syncStatus.canStartSync()) {
+    throw new Error('Sync is already running');
   }
   
   logger.info(`Manual podcast check triggered for user: ${userEmail}`);

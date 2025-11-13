@@ -1,0 +1,398 @@
+{
+  "common": {
+    "appName": "מנהל פודקאסטים",
+    "loading": "טוען...",
+    "save": "שמור",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "close": "סגור",
+    "confirm": "אשר",
+    "yes": "כן",
+    "no": "לא",
+    "search": "חיפוש",
+    "filter": "סינון",
+    "export": "ייצא",
+    "import": "ייבא",
+    "refresh": "רענן",
+    "settings": "הגדרות",
+    "logout": "התנתק",
+    "unknownError": "שגיאה לא ידועה"
+  },
+  "nav": {
+    "dashboard": "לוח בקרה",
+    "podcasts": "פודקאסטים",
+    "episodes": "פרקים",
+    "statistics": "סטטיסטיקות",
+    "settings": "הגדרות"
+  },
+  "dashboard": {
+    "title": "לוח בקרה",
+    "stats": {
+      "activePodcasts": "פודקאסטים פעילים",
+      "totalEpisodes": "סה״כ פרקים",
+      "downloaded": "הורדו",
+      "pending": "ממתינים",
+      "failed": "נכשלו",
+      "storageUsed": "נפח אחסון בשימוש",
+      "downloadsToday": "הורדות היום",
+      "quickStats": "סטטיסטיקות מהירות",
+      "successRate": "אחוז הצלחה",
+      "systemStatus": "סטטוס מערכת",
+      "downloadedEpisodes": "פרקים שהורדו",
+      "backend": "שרת",
+      "online": "מקוון",
+      "database": "מסד נתונים",
+      "lastUpdated": "עודכן לאחרונה"
+    },
+    "actions": {
+      "checkNow": "בדוק עכשיו",
+      "checking": "בודק...",
+      "verifyFiles": "אמת קבצים",
+      "verifying": "מאמת...",
+      "retryFailed": "נסה שוב נכשלים",
+      "selectAll": "בחר הכל",
+      "clearAll": "נקה הכל",
+      "starting": "מתחיל...",
+      "retrySelected": "נסה שוב נבחרים"
+    },
+    "sync": {
+      "inProgress": "סנכרון בתהליך",
+      "started": "בדיקה ידנית החלה!",
+      "alreadyRunning": "סנכרון כבר רץ",
+      "failed": "נכשל להתחיל בדיקה ידנית"
+    },
+    "drive": {
+      "connected": "מחובר",
+      "notConnected": "לא מחובר",
+      "status": "סטטוס Drive",
+      "needsAuth": "דרוש אימות",
+      "error": "שגיאה"
+    },
+    "verification": {
+      "allSynced": "כל הקבצים מסונכרנים!",
+      "missingFiles": "נמצאו {{count}} פרק/ים חסרים ב-Drive",
+      "failed": "נכשל לאמת קבצים"
+    },
+    "messages": {
+      "resyncStarted": "סנכרון מחדש החל עבור {{count}} פרק/ים",
+      "resyncFailed": "סנכרון מחדש נכשל",
+      "bulkResyncFailed": "נכשל להתחיל סנכרון מחדש המוני",
+      "noEpisodesSelected": "לא נבחרו פרקים",
+      "noFailedEpisodesSelected": "לא נבחרו פרקים נכשלים לניסיון חוזר",
+      "loadFailedEpisodesFailed": "נכשל לטעון פרקים נכשלים",
+      "retryFailed": "ניסיון חוזר נכשל"
+    },
+    "retry": {
+      "title": "נסה שוב פרקים נכשלים",
+      "description": "בחר את הפרקים שברצונך לנסות להוריד/לסנכרן שוב ל-Google Drive.",
+      "loading": "טוען פרקים נכשלים...",
+      "noFailed": "לא נמצאו פרקים נכשלים",
+      "selected": "{{count}} מתוך {{total}} נבחרו"
+    }
+  },
+  "podcasts": {
+    "title": "פודקאסטים",
+    "addNew": "הוסף פודקאסט",
+    "addNewTitle": "הוסף פודקאסט חדש",
+    "noPodcasts": "עדיין אין פודקאסטים",
+    "noPodcastsDescription": "לחץ על \"הוסף פודקאסט\" כדי להתחיל",
+    "noImage": "אין תמונה",
+  "noImagePlaceholder": "פודקאסטים",
+    "fields": {
+      "name": "שם הפודקאסט",
+      "rssUrl": "כתובת RSS",
+      "author": "מחבר",
+      "episodes": "פרקים",
+      "downloaded": "הורדו",
+      "driveFolderName": "שם תיקיית Drive",
+      "keepEpisodeCount": "מספר פרקים לשמור"
+    },
+    "actions": {
+      "refresh": "רענן",
+      "create": "צור",
+      "delete": "מחק",
+      "enabled": "הופעל",
+      "disabled": "הושבת"
+    },
+    "status": {
+      "active": "פעיל",
+      "inactive": "לא פעיל",
+      "enabled": "מופעל",
+      "disabled": "מושבת"
+    },
+    "messages": {
+      "createSuccess": "הפודקאסט נוצר בהצלחה",
+      "createFailed": "נכשל ליצור פודקאסט",
+      "deleteConfirm": "למחוק את הפודקאסט \"{{name}}\"? זה גם ימחק את כל הפרקים.",
+      "deleteSuccess": "הפודקאסט \"{{name}}\" נמחק",
+      "deleteFailed": "נכשל למחוק פודקאסט",
+      "toggleSuccess": "פודקאסט {{status}}",
+      "toggleFailed": "נכשל לעדכן פודקאסט",
+      "refreshSuccess": "רוענן \"{{name}}\": {{count}} פרקים חדשים נמצאו",
+      "refreshFailed": "נכשל לרענן פודקאסט"
+    },
+    "placeholders": {
+      "name": "הפודקאסט האהוב שלי",
+      "rssUrl": "https://...",
+      "driveFolderName": "שם תיקיית הפודקאסט ב-Google Drive"
+    },
+    "help": {
+      "driveFolderName": "זה שם התיקייה שתיווצר ב-Google Drive שלך. ברירת מחדל היא שם הפודקאסט.",
+      "keepEpisodeCount": "מספר הפרקים האחרונים לשמור באחסון ענן",
+      "keepEpisodeCountTip": "💡 טיפ: הגדר ל-<strong>0</strong> כדי לשמור את כל הפרקים (ללא הגבלה)"
+    }
+  },
+  "episodes": {
+    "title": "פרקים",
+    "noEpisodes": "לא נמצאו פרקים",
+    "noEpisodesDescription": "הוסף כמה פודקאסטים ובדוק לפרקים חדשים",
+    "filters": {
+      "all": "הכל",
+      "pending": "ממתינים",
+      "completed": "הושלמו",
+      "failed": "נכשלו"
+    },
+    "status": {
+      "pending": "ממתין",
+      "downloading": "מוריד",
+      "completed": "הושלם",
+      "failed": "נכשל"
+    },
+    "actions": {
+      "download": "הורד",
+      "resync": "סנכרן מחדש",
+      "retry": "נסה שוב"
+    },
+    "titles": {
+      "resync": "סנכרן פרק מחדש ל-Drive",
+      "retry": "נסה שוב הורדה שנכשלה"
+    },
+    "messages": {
+      "downloadStarted": "הורדה החלה עבור \"{{title}}\"",
+      "downloadFailed": "נכשל להתחיל הורדה",
+      "resyncStarted": "סנכרון מחדש החל עבור \"{{title}}\"",
+      "resyncFailed": "נכשל להתחיל סנכרון מחדש"
+    },
+    "error": "שגיאה",
+    "unknown": "לא ידוע"
+  },
+  "statistics": {
+    "title": "סטטיסטיקות",
+    "episodesByPodcast": "פרקים לפי פודקאסט",
+    "overallStatus": "סטטוס כללי",
+    "podcastDetails": "פרטי פודקאסטים",
+    "recentDownloadHistory": "היסטוריית הורדות אחרונה",
+    "noDownloadHistory": "עדיין אין היסטוריית הורדות",
+    "unknownEpisode": "פרק לא ידוע",
+    "unknownPodcast": "פודקאסט לא ידוע",
+    "table": {
+      "podcast": "פודקאסט",
+      "totalEpisodes": "סה״כ פרקים",
+      "downloaded": "הורדו",
+      "failed": "נכשלו",
+      "storage": "אחסון"
+    },
+    "status": {
+      "downloaded": "הורדו",
+      "failed": "נכשלו",
+      "pending": "ממתינים",
+      "started": "התחיל",
+      "completed": "הושלם"
+    }
+  },
+  "settings": {
+    "title": "הגדרות",
+    "system": {
+      "title": "הגדרות מערכת",
+      "subtitle": "הגדר התנהגות אפליקציה גלובלית",
+      "autoCheck": {
+        "label": "אפשר בדיקה אוטומטית",
+        "description": "כאשר מופעל, הפודקאסטים שלך ייבדקו אוטומטית כל {{hours}} שעות לפרקים חדשים. אתה עדיין יכול לבדוק ידנית בכל עת באמצעות כפתור \"בדוק עכשיו\".",
+        "disabled": "בדיקה אוטומטית כרגע כבויה. הפעל אותה כדי להוריד פרקים חדשים אוטומטית."
+      },
+      "maxEpisodes": {
+        "label": "מקסימום פרקים לבדיקה",
+        "description": "כמה פרקים אחרונים לבדוק ולהוריד כאשר פודקאסט נסרק"
+      },
+      "checkInterval": {
+        "label": "מרווח בדיקה (שעות)",
+        "description": "כמה פעמים לבדוק אוטומטית לפרקים חדשים (רק כאשר בדיקה אוטומטית מופעלת)",
+        "requiresAutoCheck": "(דורש בדיקה אוטומטית מופעלת)",
+        "options": {
+          "1": "כל שעה",
+          "2": "כל שעתיים",
+          "4": "כל 4 שעות",
+          "6": "כל 6 שעות",
+          "12": "כל 12 שעות",
+          "24": "פעם ביום",
+          "48": "כל יומיים",
+          "168": "פעם בשבוע"
+        }
+      },
+      "maxConcurrent": {
+        "label": "מקסימום הורדות במקביל",
+        "description": "מספר הפרקים להורדה במקביל"
+      },
+      "actions": {
+        "export": "ייצא נתונים",
+        "exporting": "מייצא...",
+        "import": "ייבא נתונים",
+        "importing": "מייבא...",
+        "save": "שמור הגדרות",
+        "saving": "שומר..."
+      },
+      "defaultKeep": {
+        "label": "ספירת פרקים לשמור כברירת מחדל",
+        "description": "מספר ברירת המחדל של פרקים לשמור לפודקאסטים חדשים (0 = ללא הגבלה)"
+      },
+      "saveSuccess": "הגדרות המערכת נשמרו בהצלחה",
+      "saveFailed": "נכשל לשמור הגדרות: {{error}}",
+      "exportSuccess": "הפודקאסטים ייצאו בהצלחה",
+      "exportFailed": "נכשל ביצוא: {{error}}",
+      "importSuccess": "ייבוא הצליח: {{imported}} פודקאסטים מיובאים, {{skipped}} הושמטו",
+      "importFailed": "נכשל יבוא: {{error}}",
+      "importCompletedWithErrors": "הייבוא הושלם עם שגיאות: {{imported}} מיובאים, {{skipped}} הושמטו, {{errors}} שגיאות"
+    },
+    "drive": {
+      "title": "אינטגרציית Google Drive",
+      "subtitle": "העלה פרקי פודקאסט ל-Google Drive האישי שלך",
+      "connected": "מחובר",
+      "notConnected": "לא מחובר",
+      "connect": {
+        "title": "חבר את Google Drive שלך",
+        "description": "לחץ על הכפתור למטה כדי לחבר בצורה מאובטחת את חשבון Google Drive שלך. תועבר ל-Google כדי לאשר גישה.",
+        "button": "חבר Google Drive",
+        "note": "הערה: אישורי OAuth של Google חייבים להיות מוגדרים על ידי מנהל האפליקציה",
+        "getAuthUrlFailed": "נכשל לקבל את כתובת האישור: {{error}}"
+      },
+      "advanced": {
+        "title": "הגדרות Drive מתקדמות",
+        "subtitle": "אפשרויות תצורה נוספות",
+        "legacyTitle": "מתקדם: העלאת אישורים ידנית (Legacy)",
+        "legacyDescription": "אפשרויות אלה מיועדות למשתמשים מתקדמים בלבד. רוב המשתמשים אינם צריכים את זה.",
+        "uploadCredentials": "העלה credentials.json",
+        "uploadToken": "העלה token.json",
+        "uploadCredentialsFailed": "נכשל להעלות אישורים: {{error}}",
+        "uploadTokenFailed": "נכשל להעלות אסימון: {{error}}"
+      },
+      "folder": {
+        "title": "תיקיית אחסון פודקאסטים",
+        "required": "נדרשת תיקייה",
+        "requiredDescription": "עליך לבחור תיקייה ב-Google Drive בה יאוחסנו הפודקאסטים שלך.",
+  "selected": "תיקייה נבחרה:",
+        "create": "צור תיקיית \"Podcasts\"",
+        "creating": "מגדיר...",
+        "browse": "עיין ובחר תיקייה קיימת",
+        "change": "שנה תיקייה",
+        "description": "כל פרקי הפודקאסט יאוחסנו בתת-תיקיות במיקום זה.",
+        "createSuccess": "תיקיית הפודקאסטים נוצרה בהצלחה!",
+        "foundExisting": "נמצאה וחוברה תיקיית Podcasts קיימת!",
+        "accessFailed": "נכשל לגשת לתיקייה: {{error}}",
+        "enterFolderId": "אנא הזן מזהה תיקייה",
+        "selectedSuccess": "התיקייה \"{{name}}\" נבחרה בהצלחה",
+        "saved": "התיקייה נשמרה בהצלחה"
+      },
+      "actions": {
+        "test": "בדוק חיבור",
+        "testing": "בודק...",
+        "disconnect": "נתק Drive",
+        "reset": "אפס תצורה",
+        "toggleFailed": "נכשל לשנות את מצב ה-Drive: {{error}}"
+      },
+      "resetConfirm": {
+        "title": "לאפס את תצורת Google Drive?",
+        "messageIntro": "זה יסיר את כל הגדרות Google Drive כולל:",
+        "items": [
+          "אישורי OAuth",
+          "אסימוני גישה",
+          "תצורת תיקיות"
+        ],
+        "finalWarning": "לא ניתן לבטל פעולה זו!"
+      },
+      "status": {
+        "authorized": "Google Drive אושר בהצלחה!",
+        "authFailed": "האישור נכשל: {{error}}",
+        "testSuccess": "{{message}} מחובר בתור: {{user}}",
+        "testFailed": "בדיקת החיבור נכשלה: {{error}}",
+        "resetSuccess": "תצורת Google Drive אופסה בהצלחה",
+        "resetFailed": "נכשל לאפס תצורה: {{error}}",
+        "not_configured": "לא מוגדר",
+        "credentials_uploaded": "אישורים הועלו",
+        "needs_authorization": "דרוש אימות",
+        "active": "פעיל",
+        "error": "שגיאה"
+      }
+    },
+    "data": {
+      "title": "ניהול נתונים",
+      "subtitle": "נהל נתוני פרקים ואחסון",
+      "clear": {
+        "title": "נקה את כל נתוני הפרקים",
+        "description": "זה ימחק את כל הפרקים ממסד הנתונים ואת כל הקבצים המתאימים מ-Google Drive. תהליך הסנכרון יתחיל מחדש בהרצה הבאה. לא ניתן לבטל פעולה זו!",
+        "button": "נקה את כל נתוני הפרקים",
+        "clearing": "מנקה...",
+        "confirmTitle": "לנקות את כל נתוני הפרקים?",
+        "confirmMessage": "זה יבצע:",
+        "confirmList": [
+          "מחיקת כל הפרקים ממסד הנתונים",
+          "מחיקת כל קבצי הפודקאסט מ-Google Drive",
+          "אפשרות לתהליך הסנכרון להתחיל מחדש"
+        ],
+        "finalWarning": "לא ניתן לבטל פעולה זו!",
+  "confirmContinue": "המשך",
+  "finalConfirmTitle": "אישור סופי",
+        "finalConfirmMessage": "כל נתוני הפרקים והקבצים יימחקו לצמיתות. האם אתה בטוח לחלוטין?",
+        "finalConfirmButton": "כן, מחק הכל",
+        "resultMessage": "הפרקים נמחקו: {{episodesDeleted}} פרקים, {{filesDeleted}} קבצים נמחקו, {{podcastsReset}} פודקאסטים אופסו",
+        "cleanupErrors": "אירעו שגיאות בניקוי: {{count}} שגיאות",
+        "failed": "נכשל לנקות פרקים: {{error}}"
+      },
+      "migrate": {
+        "title": "העבר תיקיית פודקאסטים ראשית",
+        "description": "שנה את מיקום תיקיית הפודקאסטים הראשית ב-Google Drive. כל תת-תיקיות הפודקאסטים יועברו למיקום החדש. זה עשוי לקחת זמן תלוי במספר הפודקאסטים.",
+        "currentFolder": "תיקייה נוכחית:",
+        "browseButton": "עיין ובחר תיקייה חדשה",
+        "newFolderSelected": "תיקייה חדשה נבחרה",
+        "startButton": "התחל העברה",
+        "migrating": "מעביר...",
+        "note": "השתמש בכפתור עיון כדי לבחור מיקום תיקייה חדש ב-Google Drive שלך.",
+        "enterNewFolder": "אנא הזן מזהה תיקייה חדש",
+        "sameAsCurrent": "התיקייה החדשה זהה לתיקייה הנוכחית",
+        "success": "ההעברה הצליחה: {{migrated}} תיקיות פודקאסט הועברו",
+        "errors": "אירעו שגיאות: {{count}} שגיאות",
+        "failed": "נכשל להעביר תיקייה: {{error}}"
+      }
+    },
+    "help": {
+      "title": "איך זה עובד",
+      "simpleSetupTitle": "הגדרה פשוטה:",
+      "simpleSetup": "לחץ על כפתור \"חבר Google Drive\" למעלה. תועבר ל-Google כדי לאמת את הגישה באופן מאובטח.",
+      "whatWeAccessTitle": "מה אנחנו ניגשים אליו:",
+      "whatWeAccess": "האפליקציה יכולה רק ליצור ולגשת לקבצים שהיא יוצרת. היא לא יכולה לראות או לשנות קבצים אחרים ב-Drive שלך.",
+      "yourDataTitle": "הנתונים שלך:",
+      "yourData": "פרקי הפודקאסט מועלים ישירות לחשבון Google Drive האישי שלך."
+    },
+    "language": {
+      "label": "שפה",
+      "english": "אנגלית",
+      "hebrew": "עברית"
+    }
+  },
+  "login": {
+    "title": "מנהל פודקאסטים",
+    "subtitle": "נהל את עידכוני RSS של הפודקאסטים שלך עם הורדות אוטומטיות",
+    "button": "היכנס עם Google",
+    "disclaimer": "על ידי היכנס, אתה מסכים לאמת זהות באופן מאובטח דרך חשבון Google שלך. אנו מקבלים גישה רק למידע הפרופיל הבסיסי שלך.",
+    "errors": {
+      "authFailed": "האימות נכשל. אנא נסה שוב.",
+      "general": "אירעה שגיאה במהלך ההתחברות."
+    }
+  },
+  "toast": {
+    "success": "הצלחה",
+    "error": "שגיאה",
+    "warning": "אזהרה",
+    "info": "מידע"
+  }
+}

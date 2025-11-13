@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Upload, CheckCircle, AlertCircle, ExternalLink, RefreshCw, Trash2, FolderPlus, Settings as SettingsIcon, Download, FileUp, FolderSync, Folder } from 'lucide-react';
 import { getDriveConfig, uploadCredentials, uploadToken, getAuthUrl, setFolderId, toggleDrive, testConnection, resetDriveConfig, createPodcastsFolder, getSystemSettings, updateSystemSettings, exportPodcasts, importPodcasts, clearAllEpisodes, migratePodcastFolder } from '../services/api';
@@ -11,6 +12,7 @@ import { getApiBaseUrl } from '../utils/apiUrl';
 function Settings() {
   const [searchParams] = useSearchParams();
   const { toasts, removeToast, toast } = useToast();
+  const { t } = useTranslation();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [folderId, setFolderIdInput] = useState('');
@@ -41,11 +43,11 @@ function Settings() {
     if (code) {
       handleOAuthCallback(code);
     } else if (success) {
-      toast.success('Google Drive authorized successfully!');
+      toast.success(t('settings.drive.status.authorized'));
       window.history.replaceState({}, '', '/settings');
       fetchConfig();
     } else if (error) {
-      toast.error('Authorization failed: ' + error);
+      toast.error(t('settings.drive.status.authFailed', { error }));
       window.history.replaceState({}, '', '/settings');
       fetchConfig();
     } else {
@@ -70,15 +72,15 @@ function Settings() {
       const data = await response.json();
       
       if (response.ok) {
-        toast.success('Google Drive authorized successfully!');
+        toast.success(t('settings.drive.status.authorized'));
         window.history.replaceState({}, '', '/settings');
         await fetchConfig();
       } else {
-        toast.error('Authorization failed: ' + (data.error || 'Unknown error'));
+        toast.error(t('settings.drive.status.authFailed', { error: data.error || t('common.unknownError') }));
         window.history.replaceState({}, '', '/settings');
       }
     } catch (error) {
-      toast.error('Failed to complete authorization: ' + error.message);
+      toast.error(t('settings.drive.status.authFailed', { error: error.message }));
       window.history.replaceState({}, '', '/settings');
     } finally {
       setLoading(false);
@@ -110,10 +112,10 @@ function Settings() {
     setSavingSettings(true);
     try {
       await updateSystemSettings(systemSettings);
-      toast.success('System settings saved successfully');
+      toast.success(t('settings.system.saveSuccess'));
       fetchSystemSettings();
     } catch (error) {
-      toast.error('Failed to save settings: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.system.saveFailed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setSavingSettings(false);
     }
@@ -130,9 +132,9 @@ function Settings() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast.success('Podcasts exported successfully');
+      toast.success(t('settings.system.exportSuccess'));
     } catch (error) {
-      toast.error('Failed to export: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.system.exportFailed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setExporting(false);
     }
@@ -151,14 +153,14 @@ function Settings() {
       const result = response.data;
       
       if (result.errors && result.errors.length > 0) {
-        toast.warning(`Import completed with errors: ${result.imported} imported, ${result.skipped} skipped, ${result.errors.length} errors`);
+        toast.warning(t('settings.system.importCompletedWithErrors', { imported: result.imported, skipped: result.skipped, errors: result.errors.length }));
       } else {
-        toast.success(`Import successful: ${result.imported} podcasts imported, ${result.skipped} skipped`);
+        toast.success(t('settings.system.importSuccess', { imported: result.imported, skipped: result.skipped }));
       }
       
       fetchSystemSettings();
     } catch (error) {
-      toast.error('Failed to import: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.system.importFailed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setImporting(false);
       e.target.value = '';
@@ -178,7 +180,7 @@ function Settings() {
       toast.success(response.data.message);
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to upload credentials: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.advanced.uploadCredentialsFailed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -198,7 +200,7 @@ function Settings() {
       toast.success(response.data.message);
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to upload token: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.advanced.uploadTokenFailed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -211,7 +213,7 @@ function Settings() {
       // Open in same window so we can capture the redirect
       window.location.href = response.data.authUrl;
     } catch (error) {
-      toast.error('Failed to get authorization URL: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.connect.getAuthUrlFailed', { error: (error.response?.data?.error || error.message) }));
     }
   };
   
@@ -222,14 +224,14 @@ function Settings() {
       setFolderIdInput(response.data.folderId);
       
       if (response.data.isNew) {
-        toast.success('Podcasts folder created successfully!');
+        toast.success(t('settings.drive.folder.createSuccess'));
       } else {
-        toast.success('Found and connected to existing Podcasts folder!');
+        toast.success(t('settings.drive.folder.foundExisting'));
       }
       
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to access folder: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.folder.accessFailed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setCreatingFolder(false);
     }
@@ -237,16 +239,16 @@ function Settings() {
   
   const handleSetFolder = async () => {
     if (!folderId.trim()) {
-      toast.warning('Please enter a folder ID');
+      toast.warning(t('settings.drive.folder.enterFolderId'));
       return;
     }
     
     try {
       await setFolderId({ folderId: folderId.trim() });
-      toast.success('Folder saved successfully');
+      toast.success(t('settings.drive.folder.saved'));
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to set folder: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.folder.accessFailed', { error: (error.response?.data?.error || error.message) }));
     }
   };
   
@@ -260,10 +262,10 @@ function Settings() {
       // Initial selection mode - immediately set as main folder
       try {
         await setFolderId({ folderId: folder.id, folderName: folder.name });
-        toast.success(`Folder "${folder.name}" selected successfully`);
+        toast.success(t('settings.drive.folder.selectedSuccess', { name: folder.name }));
         fetchConfig();
       } catch (error) {
-        toast.error('Failed to set folder: ' + (error.response?.data?.error || error.message));
+        toast.error(t('settings.drive.folder.accessFailed', { error: (error.response?.data?.error || error.message) }));
       }
     }
   };
@@ -274,7 +276,7 @@ function Settings() {
       toast.success(response.data.message);
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to toggle Drive: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.actions.toggleFailed', { error: (error.response?.data?.error || error.message) }));
     }
   };
   
@@ -282,10 +284,10 @@ function Settings() {
     setTesting(true);
     try {
       const response = await testConnection();
-      toast.success(`${response.data.message} Connected as: ${response.data.user}`);
+      toast.success(t('settings.drive.status.testSuccess', { message: response.data.message, user: response.data.user }));
       fetchConfig();
     } catch (error) {
-      toast.error('Connection test failed: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.status.testFailed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setTesting(false);
     }
@@ -297,32 +299,30 @@ function Settings() {
   
   const executeReset = async () => {
     setShowResetConfirm(false);
-    try {
+      try {
       await resetDriveConfig();
-      toast.success('Google Drive configuration reset successfully');
+      toast.success(t('settings.drive.status.resetSuccess'));
       setFolderIdInput('');
       setUseCustomFolder(false);
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to reset configuration: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.drive.status.resetFailed', { error: (error.response?.data?.error || error.message) }));
     }
   };
   
   const handleClearAllEpisodes = async () => {
     setClearing(true);
-    try {
+      try {
       const response = await clearAllEpisodes();
       const result = response.data;
-      
-      toast.success(
-        `Episodes cleared: ${result.episodesDeleted} episodes, ${result.filesDeleted} files deleted, ${result.podcastsReset} podcasts reset`
-      );
-      
+
+      toast.success(t('settings.data.clear.resultMessage', { episodesDeleted: result.episodesDeleted, filesDeleted: result.filesDeleted, podcastsReset: result.podcastsReset }));
+
       if (result.errors && result.errors.length > 0) {
-        toast.warning(`Some errors occurred during cleanup: ${result.errors.length} errors`);
+        toast.warning(t('settings.data.clear.cleanupErrors', { count: result.errors.length }));
       }
     } catch (error) {
-      toast.error('Failed to clear episodes: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.data.clear.failed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setClearing(false);
       setShowClearFinalConfirm(false);
@@ -331,12 +331,12 @@ function Settings() {
   
   const handleMigrateFolder = async () => {
     if (!newFolderId.trim()) {
-      toast.warning('Please enter a new folder ID');
+      toast.warning(t('settings.data.migrate.enterNewFolder'));
       return;
     }
-    
+
     if (newFolderId.trim() === config?.folderId) {
-      toast.warning('New folder is the same as the current folder');
+      toast.warning(t('settings.data.migrate.sameAsCurrent'));
       return;
     }
     
@@ -351,44 +351,44 @@ function Settings() {
       const result = response.data;
       
       toast.success(
-        result.migrated > 0 
-          ? `Migration successful: ${result.migrated} podcast folders moved`
+        result.migrated > 0
+          ? t('settings.data.migrate.success', { migrated: result.migrated })
           : result.message
       );
-      
+
       if (result.errors && result.errors.length > 0) {
-        toast.warning(`Some errors occurred: ${result.errors.length} errors`);
+        toast.warning(t('settings.data.migrate.errors', { count: result.errors.length }));
       }
       
       setNewFolderId('');
       fetchConfig();
     } catch (error) {
-      toast.error('Failed to migrate folder: ' + (error.response?.data?.error || error.message));
+      toast.error(t('settings.data.migrate.failed', { error: (error.response?.data?.error || error.message) }));
     } finally {
       setMigrating(false);
     }
   };
   
   if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return <div className="text-center py-12">{t('common.loading')}</div>;
   }
   
   const getStatusBadge = () => {
     const badges = {
-      not_configured: { text: 'Not Configured', color: 'bg-gray-100 text-gray-700', icon: AlertCircle },
-      credentials_uploaded: { text: 'Credentials Uploaded', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-      needs_authorization: { text: 'Needs Authorization', color: 'bg-yellow-100 text-yellow-700', icon: AlertCircle },
-      active: { text: 'Active', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-      error: { text: 'Error', color: 'bg-red-100 text-red-700', icon: AlertCircle }
+      not_configured: { key: 'settings.drive.status.not_configured', color: 'bg-gray-100 text-gray-700', icon: AlertCircle },
+      credentials_uploaded: { key: 'settings.drive.status.credentials_uploaded', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
+      needs_authorization: { key: 'settings.drive.status.needs_authorization', color: 'bg-yellow-100 text-yellow-700', icon: AlertCircle },
+      active: { key: 'settings.drive.status.active', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+      error: { key: 'settings.drive.status.error', color: 'bg-red-100 text-red-700', icon: AlertCircle }
     };
-    
+
     const badge = badges[config?.status] || badges.not_configured;
     const Icon = badge.icon;
-    
+
     return (
       <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium ${badge.color}`}>
         <Icon className="w-5 h-5" />
-        {badge.text}
+        {t(badge.key)}
       </span>
     );
   };
@@ -396,15 +396,15 @@ function Settings() {
   return (
     <div>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <h1 className="text-3xl font-bold mb-8">Settings</h1>
+  <h1 className="text-3xl font-bold mb-8">{t('settings.title')}</h1>
       
       {/* System Settings */}
       <div className="card mb-6">
         <div className="flex items-center gap-3 mb-6">
           <SettingsIcon className="w-6 h-6 text-primary" />
           <div>
-            <h2 className="text-2xl font-bold">System Settings</h2>
-            <p className="text-gray-600">Configure global app behavior</p>
+            <h2 className="text-2xl font-bold">{t('settings.system.title')}</h2>
+            <p className="text-gray-600">{t('settings.system.subtitle')}</p>
           </div>
         </div>
         
@@ -420,13 +420,12 @@ function Settings() {
                   className="mt-1 w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary cursor-pointer"
                 />
                 <div className="flex-1">
-                  <span className="font-semibold text-gray-900">Enable Automatic Checking</span>
+                  <span className="font-semibold text-gray-900">{t('settings.system.autoCheck.label')}</span>
                   <p className="text-sm text-gray-600 mt-1">
-                    When enabled, your podcasts will be checked automatically every {systemSettings.checkIntervalHours} hours for new episodes.
-                    You can still manually check anytime using the "Check Now" button.
-                    {!systemSettings.autoCheckEnabled && (
+                    {systemSettings && t('settings.system.autoCheck.description', { hours: systemSettings.checkIntervalHours })}
+                    {!systemSettings?.autoCheckEnabled && (
                       <span className="block mt-2 font-medium text-blue-700">
-                        💡 Auto-check is currently OFF. Enable it to automatically download new episodes.
+                        {t('settings.system.autoCheck.disabled')}
                       </span>
                     )}
                   </p>
@@ -437,7 +436,7 @@ function Settings() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Max Episodes Per Check
+                  {t('settings.system.maxEpisodes.label')}
                 </label>
                 <input
                   type="number"
@@ -448,15 +447,15 @@ function Settings() {
                   className="input"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  How many recent episodes to check and download when a podcast is scanned
+                  {t('settings.system.maxEpisodes.description')}
                 </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Check Interval (hours)
-                  {!systemSettings.autoCheckEnabled && (
-                    <span className="text-gray-400 text-xs ml-2">(requires auto-check enabled)</span>
+                  {t('settings.system.checkInterval.label')}
+                  {!systemSettings?.autoCheckEnabled && (
+                    <span className="text-gray-400 text-xs ml-2">{t('settings.system.checkInterval.requiresAutoCheck')}</span>
                   )}
                 </label>
                 <select
@@ -465,23 +464,23 @@ function Settings() {
                   className="input"
                   disabled={!systemSettings.autoCheckEnabled}
                 >
-                  <option value="1">Every hour</option>
-                  <option value="2">Every 2 hours</option>
-                  <option value="4">Every 4 hours</option>
-                  <option value="6">Every 6 hours</option>
-                  <option value="12">Every 12 hours</option>
-                  <option value="24">Once a day</option>
-                  <option value="48">Every 2 days</option>
-                  <option value="168">Once a week</option>
+                  <option value="1">{t('settings.system.checkInterval.options.1')}</option>
+                  <option value="2">{t('settings.system.checkInterval.options.2')}</option>
+                  <option value="4">{t('settings.system.checkInterval.options.4')}</option>
+                  <option value="6">{t('settings.system.checkInterval.options.6')}</option>
+                  <option value="12">{t('settings.system.checkInterval.options.12')}</option>
+                  <option value="24">{t('settings.system.checkInterval.options.24')}</option>
+                  <option value="48">{t('settings.system.checkInterval.options.48')}</option>
+                  <option value="168">{t('settings.system.checkInterval.options.168')}</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  How often to automatically check for new episodes (only when auto-check is enabled)
+                  {t('settings.system.checkInterval.description')}
                 </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Max Concurrent Downloads
+                  {t('settings.system.maxConcurrent.label')}
                 </label>
                 <input
                   type="number"
@@ -492,13 +491,13 @@ function Settings() {
                   className="input"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Number of episodes to download simultaneously
+                  {t('settings.system.maxConcurrent.description')}
                 </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Default Keep Episode Count
+                  {t('settings.system.defaultKeep.label')}
                 </label>
                 <input
                   type="number"
@@ -509,7 +508,7 @@ function Settings() {
                   className="input"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Default number of episodes to keep for new podcasts (0 = unlimited)
+                  {t('settings.system.defaultKeep.description')}
                 </p>
               </div>
             </div>
@@ -522,11 +521,11 @@ function Settings() {
                   className="btn btn-secondary flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  {exporting ? 'Exporting...' : 'Export Data'}
+                  {exporting ? t('settings.system.actions.exporting') : t('settings.system.actions.export')}
                 </button>
                 <label className="btn btn-secondary flex items-center gap-2 cursor-pointer">
                   <FileUp className="w-4 h-4" />
-                  {importing ? 'Importing...' : 'Import Data'}
+                  {importing ? t('settings.system.actions.importing') : t('settings.system.actions.import')}
                   <input
                     type="file"
                     accept=".json"
@@ -536,13 +535,13 @@ function Settings() {
                   />
                 </label>
               </div>
-              <button
-                onClick={handleSaveSystemSettings}
-                disabled={savingSettings}
-                className="btn btn-primary flex items-center gap-2"
-              >
-                {savingSettings ? 'Saving...' : 'Save Settings'}
-              </button>
+                <button
+                  onClick={handleSaveSystemSettings}
+                  disabled={savingSettings}
+                  className="btn btn-primary flex items-center gap-2"
+                >
+                  {savingSettings ? t('settings.system.actions.saving') : t('settings.system.actions.save')}
+                </button>
             </div>
           </div>
         )}
@@ -551,27 +550,27 @@ function Settings() {
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold mb-2">Google Drive Integration</h2>
-            <p className="text-gray-600">Upload podcast episodes to your personal Google Drive</p>
+            <h2 className="text-2xl font-bold mb-2">{t('settings.drive.title')}</h2>
+            <p className="text-gray-600">{t('settings.drive.subtitle')}</p>
           </div>
           {config?.hasToken ? (
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium bg-green-100 text-green-700">
               <CheckCircle className="w-5 h-5" />
-              Connected
+              {t('settings.drive.connected')}
             </span>
           ) : (
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium bg-gray-100 text-gray-700">
               <AlertCircle className="w-5 h-5" />
-              Not Connected
+              {t('settings.drive.notConnected')}
             </span>
           )}
         </div>
         
         {config?.errorMessage && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
             <div>
-              <p className="font-medium text-red-900">Error</p>
+              <p className="font-medium text-red-900">{t('toast.error')}</p>
               <p className="text-sm text-red-700">{config.errorMessage}</p>
             </div>
           </div>
@@ -582,23 +581,18 @@ function Settings() {
           {!config?.hasToken ? (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <div className="text-center">
-                <h3 className="text-xl font-bold mb-3">Connect Your Google Drive</h3>
-                <p className="text-gray-600 mb-6">
-                  Click the button below to securely connect your Google Drive account.
-                  You'll be redirected to Google to authorize access.
-                </p>
+                <h3 className="text-xl font-bold mb-3">{t('settings.drive.connect.title')}</h3>
+                <p className="text-gray-600 mb-6">{t('settings.drive.connect.description')}</p>
                 <button 
                   onClick={handleAuthorize}
                   disabled={!config?.hasCredentials}
                   className="btn btn-primary flex items-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  Connect Google Drive
+                  {t('settings.drive.connect.button')}
                 </button>
                 {!config?.hasCredentials && (
-                  <p className="text-sm text-gray-500 mt-3">
-                    Note: Google OAuth credentials must be configured by the app administrator
-                  </p>
+                  <p className="text-sm text-gray-500 mt-3">{t('settings.drive.connect.note')}</p>
                 )}
               </div>
             </div>
@@ -609,24 +603,24 @@ function Settings() {
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                   <div>
-                    <p className="font-semibold text-green-900">Google Drive Connected</p>
-                    <p className="text-sm text-green-700">Your podcasts will be uploaded to your Google Drive</p>
+                    <p className="font-semibold text-green-900">{t('settings.drive.connected')}</p>
+                    <p className="text-sm text-green-700">{t('settings.drive.subtitle')}</p>
                   </div>
                 </div>
               </div>
               
               {/* Folder Configuration - MOVED TO TOP */}
               <div className="border rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-bold mb-4">Podcast Storage Folder</h3>
+                <h3 className="text-lg font-bold mb-4">{t('settings.drive.folder.title')}</h3>
                 
                 {!config?.folderId ? (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                     <div className="flex items-start gap-3 mb-4">
                       <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
                       <div>
-                        <p className="font-semibold text-yellow-900">Folder Required</p>
+                        <p className="font-semibold text-yellow-900">{t('settings.drive.folder.required')}</p>
                         <p className="text-sm text-yellow-700">
-                          You must select a folder in Google Drive where your podcasts will be stored.
+                          {t('settings.drive.folder.requiredDescription')}
                         </p>
                       </div>
                     </div>
@@ -638,7 +632,7 @@ function Settings() {
                         className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
                       >
                         <FolderPlus className={`w-4 h-4 ${creatingFolder ? 'animate-spin' : ''}`} />
-                        {creatingFolder ? 'Setting up...' : 'Create "Podcasts" Folder'}
+                        {creatingFolder ? t('settings.drive.folder.creating') : t('settings.drive.folder.create')}
                       </button>
                       
                       <button
@@ -649,7 +643,7 @@ function Settings() {
                         className="btn btn-secondary flex items-center gap-2 w-full"
                       >
                         <Folder className="w-4 h-4" />
-                        Browse & Select Existing Folder
+                        {t('settings.drive.folder.browse')}
                       </button>
                     </div>
                   </div>
@@ -658,8 +652,8 @@ function Settings() {
                     <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-blue-900">Selected Folder:</p>
-                          <p className="text-lg font-bold text-blue-700">{config.folderName || 'Podcasts'}</p>
+                          <p className="text-sm font-medium text-blue-900">{t('settings.drive.folder.selected')}</p>
+                          <p className="text-lg font-bold text-blue-700">{config.folderName || t('podcasts.noImagePlaceholder')}</p>
                         </div>
                         <button
                           onClick={() => {
@@ -669,27 +663,25 @@ function Settings() {
                           className="btn btn-secondary flex items-center gap-2"
                         >
                           <Folder className="w-4 h-4" />
-                          Change Folder
+                          {t('settings.drive.folder.change')}
                         </button>
                       </div>
                     </div>
                     
-                    <p className="text-xs text-gray-500">
-                      All podcast episodes will be stored in subfolders within this location.
-                    </p>
+                    <p className="text-xs text-gray-500">{t('settings.drive.folder.description')}</p>
                   </>
                 )}
               </div>
           
           {/* Actions */}
-          <div className="flex gap-3">
+            <div className="flex gap-3">
             <button 
               onClick={handleTest}
               disabled={testing}
               className="btn btn-secondary flex items-center gap-2"
             >
               <RefreshCw className={`w-4 h-4 ${testing ? 'animate-spin' : ''}`} />
-              {testing ? 'Testing...' : 'Test Connection'}
+              {testing ? t('settings.drive.actions.testing') : t('settings.drive.actions.test')}
             </button>
             
             <button 
@@ -697,7 +689,7 @@ function Settings() {
               className="btn btn-danger flex items-center gap-2 ml-auto"
             >
               <Trash2 className="w-4 h-4" />
-              Disconnect Drive
+              {t('settings.drive.actions.disconnect')}
             </button>
           </div>
             </>
@@ -711,8 +703,8 @@ function Settings() {
         <div className="flex items-center gap-3 mb-6">
           <SettingsIcon className="w-6 h-6 text-gray-600" />
           <div>
-            <h2 className="text-2xl font-bold">Advanced Drive Settings</h2>
-            <p className="text-gray-600">Additional configuration options</p>
+            <h2 className="text-2xl font-bold">{t('settings.drive.advanced.title')}</h2>
+            <p className="text-gray-600">{t('settings.drive.advanced.subtitle')}</p>
           </div>
         </div>
         
@@ -720,13 +712,13 @@ function Settings() {
           {/* Legacy Upload Options - Collapsed by default */}
           <details className="border rounded-lg">
             <summary className="px-6 py-4 cursor-pointer hover:bg-gray-50 font-medium">
-              Advanced: Manual Credential Upload (Legacy)
+              {t('settings.drive.advanced.legacyTitle')}
             </summary>
             <div className="px-6 pb-6 space-y-4 border-t">
-              <p className="text-sm text-gray-600 mt-4">These options are for advanced users only. Most users don't need this.</p>
+              <p className="text-sm text-gray-600 mt-4">{t('settings.drive.advanced.legacyDescription')}</p>
               <label className="btn btn-secondary cursor-pointer flex items-center gap-2 w-fit">
                 <Upload className="w-4 h-4" />
-                Upload credentials.json
+                {t('settings.drive.advanced.uploadCredentials')}
                 <input 
                   type="file" 
                   accept=".json" 
@@ -736,7 +728,7 @@ function Settings() {
               </label>
               <label className="btn btn-secondary cursor-pointer flex items-center gap-2 w-fit">
                 <Upload className="w-4 h-4" />
-                Upload token.json
+                {t('settings.drive.advanced.uploadToken')}
                 <input 
                   type="file" 
                   accept=".json" 
@@ -755,41 +747,35 @@ function Settings() {
         <div className="flex items-center gap-3 mb-6">
           <Trash2 className="w-6 h-6 text-red-600" />
           <div>
-            <h2 className="text-2xl font-bold">Data Management</h2>
-            <p className="text-gray-600">Manage episode data and storage</p>
+            <h2 className="text-2xl font-bold">{t('settings.data.title')}</h2>
+            <p className="text-gray-600">{t('settings.data.subtitle')}</p>
           </div>
         </div>
         
         <div className="space-y-6">
           {/* Clear All Episodes */}
           <div className="border border-red-200 rounded-lg p-6 bg-red-50">
-            <h3 className="text-lg font-bold mb-2 text-red-900">Clear All Episodes Data</h3>
-            <p className="text-sm text-red-700 mb-4">
-              This will delete all episodes from the database and all corresponding files from Google Drive. 
-              The sync process will start fresh on the next run. <strong>This action cannot be undone!</strong>
-            </p>
+            <h3 className="text-lg font-bold mb-2 text-red-900">{t('settings.data.clear.title')}</h3>
+            <p className="text-sm text-red-700 mb-4">{t('settings.data.clear.description')}</p>
             <button
               onClick={() => setShowClearConfirm(true)}
               disabled={clearing}
               className="btn bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 disabled:opacity-50"
             >
               <Trash2 className={`w-4 h-4 ${clearing ? 'animate-spin' : ''}`} />
-              {clearing ? 'Clearing...' : 'Clear All Episodes Data'}
+              {clearing ? t('settings.data.clear.clearing') : t('settings.data.clear.button')}
             </button>
           </div>
           
           {/* Migrate Folder */}
           <div className="border rounded-lg p-6">
-            <h3 className="text-lg font-bold mb-2">Migrate Main Podcast Folder</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Change the main podcast folder location in Google Drive. All podcast subfolders 
-              will be moved to the new location. This may take time depending on the number of podcasts.
-            </p>
+            <h3 className="text-lg font-bold mb-2">{t('settings.data.migrate.title')}</h3>
+            <p className="text-sm text-gray-600 mb-4">{t('settings.data.migrate.description')}</p>
             
             {config?.folderId && (
               <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
                 <p className="text-sm text-blue-800">
-                  <strong>Current folder:</strong> {config.folderName || 'Podcasts'}
+                  <strong>{t('settings.data.migrate.currentFolder')}</strong> {config.folderName || t('podcasts.noImagePlaceholder')}
                 </p>
               </div>
             )}
@@ -805,14 +791,14 @@ function Settings() {
                 className="btn btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
               >
                 <Folder className="w-4 h-4" />
-                Browse & Select New Folder
+                {t('settings.data.migrate.browseButton')}
               </button>
             </div>
             
             {newFolderId && (
               <div className="bg-green-50 border border-green-200 rounded p-3 mb-3">
                 <p className="text-sm text-green-800">
-                  <strong>New folder selected</strong>
+                  <strong>{t('settings.data.migrate.newFolderSelected')}</strong>
                 </p>
                 <button
                   onClick={handleMigrateFolder}
@@ -820,13 +806,13 @@ function Settings() {
                   className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full mt-2"
                 >
                   <FolderSync className={`w-4 h-4 ${migrating ? 'animate-spin' : ''}`} />
-                  {migrating ? 'Migrating...' : 'Start Migration'}
+                  {migrating ? t('settings.data.migrate.migrating') : t('settings.data.migrate.startButton')}
                 </button>
               </div>
             )}
             
             <p className="text-xs text-gray-500 mt-2">
-              Use the Browse button to select a new folder location in your Google Drive.
+              {t('settings.data.migrate.note')}
             </p>
           </div>
         </div>
@@ -835,18 +821,16 @@ function Settings() {
       {/* Help - Only show when NOT connected */}
       {!config?.hasToken && (
       <div className="card">
-        <h3 className="text-xl font-bold mb-4">How It Works</h3>
+        <h3 className="text-xl font-bold mb-4">{t('settings.help.title')}</h3>
         <div className="space-y-3 text-sm text-gray-600">
           <p>
-            <strong>Simple Setup:</strong> Just click the "Connect Google Drive" button above. 
-            You'll be redirected to Google to securely authorize access to your Drive.
+            <strong>{t('settings.help.simpleSetupTitle')}</strong> {t('settings.help.simpleSetup')}
           </p>
           <p>
-            <strong>What We Access:</strong> The app can only create and access files it creates. 
-            It cannot see or modify your other Drive files.
+            <strong>{t('settings.help.whatWeAccessTitle')}</strong> {t('settings.help.whatWeAccess')}
           </p>
           <p>
-            <strong>Your Data:</strong> Podcast episodes are uploaded directly to your personal Google Drive account.
+            <strong>{t('settings.help.yourDataTitle')}</strong> {t('settings.help.yourData')}
           </p>
         </div>
       </div>
@@ -860,19 +844,19 @@ function Settings() {
           setShowClearConfirm(false);
           setShowClearFinalConfirm(true);
         }}
-        title="Clear All Episodes Data?"
+        title={t('settings.data.clear.confirmTitle')}
         message={
           <div>
-            <p className="mb-3">This will:</p>
+            <p className="mb-3">{t('settings.data.clear.confirmMessage')}</p>
             <ul className="list-disc list-inside space-y-1 mb-3">
-              <li>Delete all episodes from the database</li>
-              <li>Delete all podcast files from Google Drive</li>
-              <li>Allow the sync to start fresh</li>
+              {t('settings.data.clear.confirmList', { returnObjects: true }).map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
             </ul>
-            <p className="font-bold text-red-600">This action CANNOT be undone!</p>
+            <p className="font-bold text-red-600">{t('settings.data.clear.finalWarning')}</p>
           </div>
         }
-        confirmText="Continue"
+        confirmText={t('settings.data.clear.confirmContinue') || t('common.confirm')}
         confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
         icon={Trash2}
         iconColor="text-red-600"
@@ -882,9 +866,9 @@ function Settings() {
         isOpen={showClearFinalConfirm}
         onClose={() => setShowClearFinalConfirm(false)}
         onConfirm={handleClearAllEpisodes}
-        title="FINAL CONFIRMATION"
-        message="All episode data and files will be permanently deleted. Are you absolutely sure?"
-        confirmText="Yes, Delete Everything"
+        title={t('settings.data.clear.finalConfirmTitle')}
+        message={t('settings.data.clear.finalConfirmMessage')}
+        confirmText={t('settings.data.clear.finalConfirmButton')}
         confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
         icon={AlertCircle}
         iconColor="text-red-600"
@@ -894,18 +878,14 @@ function Settings() {
         isOpen={showMigrateConfirm}
         onClose={() => setShowMigrateConfirm(false)}
         onConfirm={executeMigration}
-        title="Migrate Podcast Folder?"
+        title={t('settings.data.migrate.title')}
         message={
           <div>
-            <p className="mb-3">
-              This will move all podcast subfolders from the current location to the new folder.
-            </p>
-            <p className="text-sm text-gray-600">
-              ⏱️ This may take some time depending on the number of podcasts.
-            </p>
+            <p className="mb-3">{t('settings.data.migrate.description')}</p>
+            <p className="text-sm text-gray-600">{t('settings.data.migrate.note')}</p>
           </div>
         }
-        confirmText="Start Migration"
+        confirmText={t('settings.data.migrate.startButton')}
         icon={FolderSync}
       />
       
@@ -913,21 +893,19 @@ function Settings() {
         isOpen={showResetConfirm}
         onClose={() => setShowResetConfirm(false)}
         onConfirm={executeReset}
-        title="Reset Google Drive Configuration?"
+        title={t('settings.drive.resetConfirm.title')}
         message={
           <div>
-            <p className="mb-3">
-              This will remove all Google Drive settings including:
-            </p>
+            <p className="mb-3">{t('settings.drive.resetConfirm.messageIntro')}</p>
             <ul className="list-disc list-inside space-y-1 mb-3">
-              <li>OAuth credentials</li>
-              <li>Access tokens</li>
-              <li>Folder configuration</li>
+              {t('settings.drive.resetConfirm.items', { returnObjects: true }).map((it, i) => (
+                <li key={i}>{it}</li>
+              ))}
             </ul>
-            <p className="font-bold text-red-600">This action cannot be undone!</p>
+            <p className="font-bold text-red-600">{t('settings.drive.resetConfirm.finalWarning')}</p>
           </div>
         }
-        confirmText="Reset Configuration"
+        confirmText={t('settings.drive.actions.reset')}
         confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
         icon={Trash2}
         iconColor="text-red-600"

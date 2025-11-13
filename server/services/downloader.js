@@ -5,6 +5,39 @@ import Podcast from '../models/Podcast.js';
 import DownloadHistory from '../models/DownloadHistory.js';
 import { uploadStreamToDrive } from './cloudStorage.js';
 
+// Helper function to retry download on network errors
+async function downloadWithRetry(url, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios({
+        method: 'get',
+        url,
+        responseType: 'stream',
+        timeout: 7200000, // 2 hours in milliseconds
+        maxRedirects: 5,
+        // Keep connection alive for long downloads
+        httpAgent: new (await import('http')).Agent({ keepAlive: true }),
+        httpsAgent: new (await import('https')).Agent({ keepAlive: true })
+      });
+      return response;
+    } catch (error) {
+      const isRetryable = error.code === 'ECONNRESET' || 
+                          error.code === 'ETIMEDOUT' || 
+                          error.code === 'ENOTFOUND' ||
+                          error.code === 'EAI_AGAIN' ||
+                          (error.response && error.response.status >= 500);
+      
+      if (isRetryable && attempt < maxRetries) {
+        const delay = attempt * 2000; // Exponential backoff: 2s, 4s, 6s
+        logger.warn(`Download attempt ${attempt} failed with ${error.code}, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 export async function downloadEpisode(episode, podcast, userId) {
   const startTime = new Date();
   
@@ -23,12 +56,8 @@ export async function downloadEpisode(episode, podcast, userId) {
       startTime
     });
     
-    // Stream the file directly from URL
-    const response = await axios({
-      method: 'get',
-      url: episode.audioUrl,
-      responseType: 'stream'
-    });
+    // Stream the file directly from URL with retry logic
+    const response = await downloadWithRetry(episode.audioUrl);
     
     // Calculate episode number based on pub date (newer = higher number)
     // Count how many episodes for this podcast have a later or equal pub date
@@ -58,16 +87,6 @@ export async function downloadEpisode(episode, podcast, userId) {
     const paddedNumber = String(episodeNumber).padStart(3, '0');
     const filename = `${paddedNumber}-${sanitizedTitle}.mp3`;
     
-    // Track bytes downloaded
-    let bytesDownloaded = 0;
-    response.data.on('data', (chunk) => {
-      bytesDownloaded += chunk.length;
-    });
-    // Add stream error handler for better diagnostics
-    response.data.on('error', (err) => {
-      logger.error(`Audio stream error for ${episode.title}:`, err);
-    });
-    
     // Upload stream directly to Google Drive (no local storage)
     // IMPORTANT: forward userId so cloudStorage can load the correct Drive config
     const uploadResult = await uploadStreamToDrive(response.data, filename, podcast, userId);
@@ -82,7 +101,7 @@ export async function downloadEpisode(episode, podcast, userId) {
       downloadDate: endTime,
       cloudFileId: uploadResult.fileId,
       cloudUrl: uploadResult.webViewLink,
-      fileSize: bytesDownloaded
+      fileSize: uploadResult.size
     });
     
     // Update history
@@ -90,14 +109,14 @@ export async function downloadEpisode(episode, podcast, userId) {
       status: 'completed',
       endTime,
       duration,
-      bytesDownloaded,
+      bytesDownloaded: uploadResult.size,
       uploadedToCloud: true,
       cloudUploadTime: endTime
     });
     
-    logger.info(`Stream completed: ${episode.title} (${bytesDownloaded} bytes in ${duration}s) -> Drive: ${uploadResult.fileId}`);
+    logger.info(`Stream completed: ${episode.title} (${uploadResult.size} bytes in ${duration}s) -> Drive: ${uploadResult.fileId}`);
     
-    return { success: true, fileId: uploadResult.fileId, bytesDownloaded };
+    return { success: true, fileId: uploadResult.fileId, bytesDownloaded: uploadResult.size };
     
   } catch (error) {
     logger.error(`Download failed for ${episode.title}:`, error);

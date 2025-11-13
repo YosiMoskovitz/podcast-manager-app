@@ -93,7 +93,7 @@ Single Server :5000
 ```env
 # Change these for production:
 NODE_ENV=production
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/podcast-manager
+MONGODB_URI=mongodb+srv://<user>:<pass>@<*.mongodb.net/podcast-manager>s
 CLIENT_URL=https://yourdomain.com
 
 # Update OAuth callbacks:

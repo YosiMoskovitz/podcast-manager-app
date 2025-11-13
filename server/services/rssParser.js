@@ -8,35 +8,56 @@ const parser = new Parser({
       ['itunes:explicit', 'explicit'],
       ['itunes:image', 'image']
     ]
-  }
+  },
+  timeout: 30000, // 30 second timeout for RSS feed fetching
+  maxRedirects: 5
 });
 
-export async function parseFeed(feedUrl) {
-  try {
-    logger.info(`Parsing RSS feed: ${feedUrl}`);
-    const feed = await parser.parseURL(feedUrl);
+export async function parseFeed(feedUrl, retries = 2) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= retries + 1; attempt++) {
+    try {
+      logger.info(`Parsing RSS feed: ${feedUrl}${attempt > 1 ? ` (attempt ${attempt})` : ''}`);
+      const feed = await parser.parseURL(feedUrl);
     
-    return {
-      title: feed.title,
-      description: feed.description,
-      imageUrl: feed.image?.url || feed.itunes?.image,
-      author: feed.itunes?.author || feed.author,
-      link: feed.link,
-      episodes: feed.items.map(item => ({
-        title: item.title,
-        description: item.contentSnippet || item.description,
-        guid: item.guid || item.link,
-        pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
-        audioUrl: item.enclosure?.url,
-        duration: item.duration || item.itunes?.duration,
-        fileSize: item.enclosure?.length ? parseInt(item.enclosure.length) : null,
-        link: item.link
-      }))
-    };
-  } catch (error) {
-    logger.error(`Error parsing RSS feed ${feedUrl}:`, error);
-    throw error;
+      return {
+        title: feed.title,
+        description: feed.description,
+        imageUrl: feed.image?.url || feed.itunes?.image,
+        author: feed.itunes?.author || feed.author,
+        link: feed.link,
+        episodes: feed.items.map(item => ({
+          title: item.title,
+          description: item.contentSnippet || item.description,
+          guid: item.guid || item.link,
+          pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
+          audioUrl: item.enclosure?.url,
+          duration: item.duration || item.itunes?.duration,
+          fileSize: item.enclosure?.length ? parseInt(item.enclosure.length) : null,
+          link: item.link
+        }))
+      };
+    } catch (error) {
+      lastError = error;
+      const isRetryable = error.code === 'ECONNRESET' || 
+                          error.code === 'ETIMEDOUT' || 
+                          error.code === 'ENOTFOUND' ||
+                          error.code === 'EAI_AGAIN';
+      
+      if (isRetryable && attempt <= retries) {
+        const delay = attempt * 1000; // 1s, 2s
+        logger.warn(`RSS feed parsing attempt ${attempt} failed with ${error.code}, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        logger.error(`Error parsing RSS feed ${feedUrl}:`, error);
+        throw error;
+      }
+    }
   }
+  
+  // If we got here, all retries failed
+  throw lastError;
 }
 
 export async function getLatestEpisodes(feedUrl, limit = 5) {
