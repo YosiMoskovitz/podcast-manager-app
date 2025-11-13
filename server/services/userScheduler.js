@@ -185,13 +185,29 @@ async function processUserPodcasts(userId, userEmail) {
           });
           
           if (!exists) {
-            const episode = await Episode.create({
+            // Create new episode and encrypt it
+            const episode = new Episode({
               userId,
-              ...episodeData,
               podcast: podcast._id,
-              status: 'pending', // Mark as pending for download
+              guid: episodeData.guid,
+              pubDate: episodeData.pubDate,
+              duration: episodeData.duration,
+              status: 'pending',
               downloaded: false
             });
+            
+            // Set virtual fields (unencrypted data)
+            episode.title = episodeData.title;
+            episode.description = episodeData.description;
+            episode.audioUrl = episodeData.audioUrl;
+            episode.originalFileName = episodeData.originalFileName;
+            
+            // Encrypt the fields before saving
+            episode.encrypt(userKey);
+            
+            // Save the episode
+            await episode.save();
+            
             newCount++;
             
             // Add to download queue
