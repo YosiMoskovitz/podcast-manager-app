@@ -49,4 +49,18 @@ const podcastSchema = new mongoose.Schema({
 // Compound unique index: name must be unique per user
 podcastSchema.index({ userId: 1, name: 1 }, { unique: true });
 
+// Reserve a contiguous block of sequence numbers atomically.
+// Returns { start, end }
+podcastSchema.statics.reserveSequenceBlock = async function(podcastId, count) {
+  if (!count || count <= 0) return { start: null, end: null };
+  const res = await this.findByIdAndUpdate(
+    podcastId,
+    { $inc: { episodeCounter: count } },
+    { new: true }
+  );
+  const end = res.episodeCounter;
+  const start = end - count + 1;
+  return { start, end };
+};
+
 export default mongoose.model('Podcast', podcastSchema);

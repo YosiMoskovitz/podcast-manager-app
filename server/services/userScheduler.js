@@ -220,19 +220,49 @@ async function processUserPodcasts(userId, userEmail) {
     logger.info(`[${userEmail}] Discovery phase completed. Found ${newEpisodesToDownload.length} new episodes to download`);
     
     // ============================================
-    // PHASE 2: DOWNLOAD - Download all new episodes
+    // PHASE 2: DOWNLOAD - reserve numbers and download all new episodes
     // ============================================
     if (newEpisodesToDownload.length > 0) {
       syncStatus.startDownloadPhase(newEpisodesToDownload.length);
-      
+
+      // Group new episodes by podcast to reserve blocks per-podcast
+      const mapByPodcast = new Map();
+      for (const item of newEpisodesToDownload) {
+        const key = String(item.podcast._id);
+        const arr = mapByPodcast.get(key) || { podcast: item.podcast, episodes: [] };
+        arr.episodes.push(item.episode);
+        mapByPodcast.set(key, arr);
+      }
+
+      // Reserve and assign sequenceNumbers per podcast
+      for (const [_, bucket] of mapByPodcast.entries()) {
+        const podcast = bucket.podcast;
+        const eps = bucket.episodes;
+        if (eps.length === 0) continue;
+        try {
+          const { start } = await Podcast.reserveSequenceBlock(podcast._id, eps.length);
+          eps.sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+          const ops = [];
+          for (let i = 0; i < eps.length; i++) {
+            const seq = start + i;
+            ops.push({ updateOne: { filter: { _id: eps[i]._id }, update: { $set: { sequenceNumber: seq } } } });
+            eps[i].sequenceNumber = seq;
+          }
+          if (ops.length > 0) await Episode.bulkWrite(ops);
+        } catch (err) {
+          logger.error(`Failed to reserve/assign numbers for ${podcast.name}:`, err);
+        }
+      }
+
+      // Now perform downloads (sequentially as before)
       for (const { episode, podcast } of newEpisodesToDownload) {
         try {
           logger.info(`[${userEmail}] Downloading: ${episode.title} (${podcast.name})`);
           await downloadEpisode(episode, podcast, userId);
-          
+
           // Update sync status for this episode
           syncStatus.updateEpisode(episode.title, podcast.name, 'success');
-          
+
         } catch (downloadError) {
           logger.error(`[${userEmail}] Failed to download ${episode.title}:`, downloadError);
           // Update sync status with error

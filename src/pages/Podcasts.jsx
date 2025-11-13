@@ -12,6 +12,7 @@ function Podcasts() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPodcast, setEditingPodcast] = useState(null);
+  const [savingPodcast, setSavingPodcast] = useState(false);
   const [newPodcast, setNewPodcast] = useState({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
   
   useEffect(() => {
@@ -31,6 +32,8 @@ function Podcasts() {
   
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (savingPodcast) return;
+    setSavingPodcast(true);
     try {
       if (editingPodcast) {
         await updatePodcast(editingPodcast._id, newPodcast);
@@ -46,6 +49,8 @@ function Podcasts() {
     } catch (error) {
       const errorMsg = editingPodcast ? t('podcasts.messages.updateFailed') : t('podcasts.messages.createFailed');
       toast.error(errorMsg + ': ' + (error.response?.data?.error || error.message));
+    } finally {
+      setSavingPodcast(false);
     }
   };
 
@@ -211,6 +216,7 @@ function Podcasts() {
                     }}
                     className="input"
                     placeholder={t('podcasts.placeholders.name')}
+                    disabled={savingPodcast}
                   />
                 </div>
                 <div>
@@ -222,7 +228,7 @@ function Podcasts() {
                     onChange={(e) => setNewPodcast({ ...newPodcast, rssUrl: e.target.value })}
                     className="input"
                     placeholder={t('podcasts.placeholders.rssUrl')}
-                    disabled={editingPodcast !== null}
+                    disabled={editingPodcast !== null || savingPodcast}
                   />
                   {editingPodcast && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -238,6 +244,7 @@ function Podcasts() {
                     onChange={(e) => setNewPodcast({ ...newPodcast, driveFolderName: e.target.value })}
                     className="input"
                     placeholder={t('podcasts.placeholders.driveFolderName')}
+                    disabled={savingPodcast}
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {t('podcasts.help.driveFolderName')}
@@ -252,6 +259,7 @@ function Podcasts() {
                     value={newPodcast.keepEpisodeCount}
                     onChange={(e) => setNewPodcast({ ...newPodcast, keepEpisodeCount: parseInt(e.target.value) })}
                     className="input"
+                    disabled={savingPodcast}
                   />
                   <div className="mt-2 space-y-1">
                     <p className="text-xs text-gray-600">
@@ -263,10 +271,10 @@ function Podcasts() {
               </div>
               
               <div className="flex gap-3 mt-6">
-                <button type="submit" className="btn btn-primary flex-1">
-                  {editingPodcast ? t('common.save') : t('podcasts.actions.create')}
+                <button type="submit" className="btn btn-primary flex-1" disabled={savingPodcast}>
+                  {savingPodcast ? (t('podcasts.actions.saving') || t('common.saving')) : (editingPodcast ? t('common.save') : t('podcasts.actions.create'))}
                 </button>
-                <button type="button" onClick={handleCloseModal} className="btn btn-secondary flex-1">
+                <button type="button" onClick={handleCloseModal} className="btn btn-secondary flex-1" disabled={savingPodcast}>
                   {t('common.cancel')}
                 </button>
               </div>

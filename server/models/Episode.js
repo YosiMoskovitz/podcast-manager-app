@@ -25,6 +25,7 @@ const episodeSchema = new mongoose.Schema({
   audioUrl: String,
   duration: String,
   fileSize: Number,
+  originalFileName: String,
   downloaded: {
     type: Boolean,
     default: false
@@ -46,5 +47,7 @@ const episodeSchema = new mongoose.Schema({
 
 episodeSchema.index({ podcast: 1, pubDate: -1 });
 episodeSchema.index({ guid: 1 });
+// Ensure sequenceNumber is unique per podcast when present
+episodeSchema.index({ podcast: 1, sequenceNumber: 1 }, { unique: true, partialFilterExpression: { sequenceNumber: { $exists: true } } });
 
 export default mongoose.model('Episode', episodeSchema);

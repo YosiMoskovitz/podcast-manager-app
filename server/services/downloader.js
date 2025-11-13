@@ -59,33 +59,46 @@ export async function downloadEpisode(episode, podcast, userId) {
     // Stream the file directly from URL with retry logic
     const response = await downloadWithRetry(episode.audioUrl);
     
-    // Calculate episode number based on pub date (newer = higher number)
-    // Count how many episodes for this podcast have a later or equal pub date
-    const newerEpisodesCount = await Episode.countDocuments({
-      podcast: podcast._id,
-      pubDate: { $gte: episode.pubDate || new Date() }
-    });
-    
-    const episodeNumber = newerEpisodesCount;
-    
-    // Store sequence number in episode
-    episode.sequenceNumber = episodeNumber;
-    await episode.save();
-    
-    // Update podcast's max counter if this is higher
-    if (episodeNumber > podcast.episodeCounter) {
-      podcast.episodeCounter = episodeNumber;
-      await podcast.save();
+    // Use existing sequenceNumber if already assigned (reserved by scheduler)
+    if (typeof episode.sequenceNumber === 'number' && !isNaN(episode.sequenceNumber)) {
+      // ensure podcast counter is up-to-date
+      if (episode.sequenceNumber > podcast.episodeCounter) {
+        podcast.episodeCounter = episode.sequenceNumber;
+        await podcast.save();
+      }
+    } else {
+      // Calculate episode number based on pub date (newer = higher number)
+      const newerEpisodesCount = await Episode.countDocuments({
+        podcast: podcast._id,
+        pubDate: { $gte: episode.pubDate || new Date() }
+      });
+      let episodeNumber = newerEpisodesCount;
+
+      // Try to set the computed number; if a duplicate-key occurs, fall back to atomic increment
+      try {
+        const updated = await Episode.findByIdAndUpdate(episode._id, { $set: { sequenceNumber: episodeNumber } }, { new: true });
+        episode = updated; // update local instance
+      } catch (err) {
+        // Duplicate key or other errors: reserve a unique number via atomic increment
+        const updatedPodcast = await Podcast.findByIdAndUpdate(podcast._id, { $inc: { episodeCounter: 1 } }, { new: true });
+        episodeNumber = updatedPodcast.episodeCounter;
+        await Episode.findByIdAndUpdate(episode._id, { $set: { sequenceNumber: episodeNumber } });
+        episode.sequenceNumber = episodeNumber;
+        // ensure podcast object reflects new counter
+        podcast.episodeCounter = updatedPodcast.episodeCounter;
+      }
     }
     
-    // Generate filename with episode number prefix (e.g., 001-Title.mp3)
-    // Keep Unicode letters (including Hebrew), numbers, spaces, and common punctuation
-    const sanitizedTitle = episode.title
-      .replace(/[\\/:*?"<>|]/g, '_')  // Replace only invalid filename characters
-      .replace(/\s+/g, '_')             // Replace spaces with underscores
-      .substring(0, 100);
-    const paddedNumber = String(episodeNumber).padStart(3, '0');
-    const filename = `${paddedNumber}-${sanitizedTitle}.mp3`;
+    // Generate filename with sequence number prefix (e.g., 001-Original Title.mp3)
+    // Preserve the original episode title (including spaces and emoji) when uploading to Drive.
+    // Only remove control characters and trim to a reasonable length to avoid issues.
+    const rawTitle = (episode.title || '').normalize && (episode.title || '').normalize('NFC').trim() || String(episode.title || '').trim();
+    const cleanedTitle = rawTitle.replace(/[\u0000-\u001F\u007F]/g, ''); // strip control chars
+    // Ensure we have a numeric sequence available (may have been assigned above or in DB)
+    const seqNumber = (typeof episode.sequenceNumber === 'number' && !isNaN(episode.sequenceNumber)) ? episode.sequenceNumber : (podcast.episodeCounter || 0);
+    const paddedNumber = String(seqNumber).padStart(3, '0');
+    // Do not truncate the title: preserve the full cleaned title (user requested no truncation)
+    const filename = `${paddedNumber}-${cleanedTitle}.mp3`;
     
     // Upload stream directly to Google Drive (no local storage)
     // IMPORTANT: forward userId so cloudStorage can load the correct Drive config
@@ -94,14 +107,15 @@ export async function downloadEpisode(episode, podcast, userId) {
     const endTime = new Date();
     const duration = (endTime - startTime) / 1000;
     
-    // Update episode with Drive info
+    // Update episode with Drive info and preserve the original filename used for upload
     await Episode.findByIdAndUpdate(episode._id, {
       status: 'completed',
       downloaded: true,
       downloadDate: endTime,
       cloudFileId: uploadResult.fileId,
       cloudUrl: uploadResult.webViewLink,
-      fileSize: uploadResult.size
+      fileSize: uploadResult.size,
+      originalFileName: `${cleanedTitle}.mp3`
     });
     
     // Update history

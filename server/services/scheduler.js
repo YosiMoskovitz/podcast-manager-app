@@ -59,7 +59,8 @@ export async function checkAndDownloadPodcasts() {
         const episodes = await getLatestEpisodes(podcast.rssUrl, maxEpisodes);
         let newCount = 0;
         
-        // Add new episodes to database
+        // Add new episodes to database and collect them for batch assignment
+        const newEpisodesForPodcast = [];
         for (const episodeData of episodes) {
           const exists = await Episode.findOne({ guid: episodeData.guid });
           if (!exists) {
@@ -68,10 +69,39 @@ export async function checkAndDownloadPodcasts() {
               podcast: podcast._id
             });
             newCount++;
-            
-            // Auto-download new episodes (streams directly to Drive)
+            newEpisodesForPodcast.push(episode);
+          }
+        }
+
+        // If we have new episodes, reserve a contiguous block and assign sequenceNumbers
+        if (newEpisodesForPodcast.length > 0) {
+          try {
+            // Reserve numbers from Podcast atomically
+            const { start } = await Podcast.reserveSequenceBlock(podcast._id, newEpisodesForPodcast.length);
+
+            // Sort by pubDate desc so higher sequence = older index (matching existing logic)
+            newEpisodesForPodcast.sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+
+            const bulkOps = [];
+            for (let i = 0; i < newEpisodesForPodcast.length; i++) {
+              const seq = start + i;
+              bulkOps.push({
+                updateOne: {
+                  filter: { _id: newEpisodesForPodcast[i]._id },
+                  update: { $set: { sequenceNumber: seq } }
+                }
+              });
+              // also set local value so subsequent code can use it
+              newEpisodesForPodcast[i].sequenceNumber = seq;
+            }
+            if (bulkOps.length > 0) await Episode.bulkWrite(bulkOps);
+          } catch (err) {
+            logger.error(`Failed to reserve/assign sequence numbers for ${podcast.name}:`, err);
+          }
+
+          // Auto-download new episodes (streams directly to Drive)
+          for (const episode of newEpisodesForPodcast) {
             try {
-              // Pass podcast.userId so downloader can access the correct Drive config and history
               await downloadEpisode(episode, podcast, podcast.userId);
             } catch (downloadError) {
               logger.error(`Failed to download/upload ${episode.title}:`, downloadError);
