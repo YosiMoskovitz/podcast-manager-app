@@ -60,7 +60,9 @@
       "inProgress": "Sync in progress",
       "started": "Manual check started!",
       "alreadyRunning": "Sync is already in progress",
-      "failed": "Failed to start manual check"
+      "failed": "Failed to start manual check",
+      "noActiveSync": "No active sync",
+      "episodesSynced": "Episodes synced"
     },
     "syncModal": {
       "titleRunning": "Syncing Podcasts",

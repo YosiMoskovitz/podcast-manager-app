@@ -60,7 +60,9 @@
       "inProgress": "סנכרון בתהליך",
       "started": "בדיקה ידנית החלה!",
       "alreadyRunning": "סנכרון כבר רץ",
-      "failed": "נכשל להתחיל בדיקה ידנית"
+      "failed": "נכשל להתחיל בדיקה ידנית",
+      "noActiveSync": "אין סנכרון פעיל",
+      "episodesSynced": "פרקים מסונכרנים"
     },
     "syncModal": {
       "titleRunning": "מסנכרן פודקאסטים",
