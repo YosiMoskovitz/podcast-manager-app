@@ -181,9 +181,11 @@ router.delete('/clear-all/confirm', async (req, res) => {
     logger.info('Starting clear all episodes operation');
     
     // Import cloudStorage dynamically to avoid circular dependency
-    const { getDriveClient } = await import('../services/cloudStorage.js');
+    const { getDriveClient, initializeDrive } = await import('../services/cloudStorage.js');
     const DriveCredentials = (await import('../models/DriveCredentials.js')).default;
     
+    // Initialize drive client for this user
+    await initializeDrive(req.user.id);
     const drive = getDriveClient();
     const driveConfig = await DriveCredentials.getConfig(req.user.id);
     const mainFolderId = driveConfig?.folderId;

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../hooks/useToast';
 import { X, Folder, ChevronRight, ChevronDown, Home, Loader, FolderPlus } from 'lucide-react';
 import { getApiBaseUrl } from '../utils/apiUrl';
 
 function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -31,16 +33,16 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
         setFolders([
           {
             id: 'root',
-            name: 'My Drive',
+            name: t('settings.drive.browser.myDrive'),
             isRoot: true,
             children: data.folders || []
           }
         ]);
       } else {
-        setError(data.error || 'Failed to load folders');
+        setError(t('settings.drive.browser.loadFoldersFailed'));
       }
     } catch (err) {
-      setError('Failed to connect to server');
+      setError(t('settings.drive.browser.connectFailed'));
     } finally {
       setLoading(false);
     }
@@ -54,11 +56,11 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
       if (response.ok) {
         return data.folders || [];
       } else {
-        console.error('Failed to load subfolders:', data.error);
+        console.error(t('settings.drive.browser.loadSubfoldersFailed'), data.error);
         return [];
       }
     } catch (err) {
-      console.error('Failed to load subfolders:', err);
+      console.error(t('settings.drive.browser.loadSubfoldersError'), err);
       return [];
     }
   };
@@ -125,10 +127,10 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
         setNewFolderName('');
         setNewFolderParent(null);
       } else {
-        toast.error('Failed to create folder: ' + (data.error || 'Unknown error'));
+        toast.error(t('settings.drive.browser.createFolderFailed', { error: data.error || t('common.unknownError') }));
       }
     } catch (err) {
-      toast.error('Failed to create folder: ' + err.message);
+      toast.error(t('settings.drive.browser.createFolderFailed', { error: err.message }));
     } finally {
       setCreatingFolder(false);
     }
@@ -175,7 +177,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
             <span className="text-sm truncate">{folder.name}</span>
             {isCurrent && (
               <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded">
-                Current
+                {t('settings.drive.browser.current')}
               </span>
             )}
           </button>
@@ -183,7 +185,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
           <button
             onClick={() => setNewFolderParent(folder.id)}
             className="p-1 hover:bg-gray-200 rounded"
-            title="Create subfolder here"
+            title={t('settings.drive.browser.createSubfolderTitle')}
           >
             <FolderPlus className="w-4 h-4 text-gray-400 hover:text-gray-600" />
           </button>
@@ -205,9 +207,9 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] flex flex-col">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-2xl font-bold">Select Google Drive Folder</h2>
+            <h2 className="text-2xl font-bold">{t('settings.drive.browser.title')}</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Choose a destination folder for your podcasts
+              {t('settings.drive.browser.subtitle')}
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -218,13 +220,13 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
         {/* Create Folder Section */}
         {newFolderParent && (
           <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="text-sm font-semibold mb-2">Create New Folder</h3>
+            <h3 className="text-sm font-semibold mb-2">{t('settings.drive.browser.createNewFolder')}</h3>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Folder name"
+                placeholder={t('settings.drive.browser.folderNamePlaceholder')}
                 className="input flex-1"
                 onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
                 autoFocus
@@ -234,7 +236,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
                 disabled={!newFolderName.trim() || creatingFolder}
                 className="btn btn-primary disabled:opacity-50"
               >
-                {creatingFolder ? <Loader className="w-4 h-4 animate-spin" /> : 'Create'}
+                {creatingFolder ? <Loader className="w-4 h-4 animate-spin" /> : t('settings.drive.browser.create')}
               </button>
               <button
                 onClick={() => {
@@ -243,7 +245,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
                 }}
                 className="btn btn-secondary"
               >
-                Cancel
+                {t('settings.drive.browser.cancel')}
               </button>
             </div>
           </div>
@@ -271,10 +273,10 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
         {/* Selected Folder Info */}
         {selectedFolder && (
           <div className="mb-4 p-3 bg-gray-50 border rounded">
-            <div className="text-sm text-gray-600">Selected:</div>
+            <div className="text-sm text-gray-600">{t('settings.drive.browser.selected')}</div>
             <div className="font-medium">{selectedFolder.name}</div>
             <div className="text-xs text-gray-500 mt-1">
-              ID: {selectedFolder.id}
+              {t('settings.drive.browser.id')} {selectedFolder.id}
             </div>
           </div>
         )}
@@ -282,7 +284,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
         {/* Actions */}
         <div className="flex gap-3 justify-end">
           <button onClick={onClose} className="btn btn-secondary">
-            Cancel
+            {t('settings.drive.browser.cancel')}
           </button>
           <button
             onClick={() => {
@@ -294,7 +296,7 @@ function DriveFolderBrowser({ isOpen, onClose, onSelectFolder, currentFolderId }
             disabled={!selectedFolder}
             className="btn btn-primary disabled:opacity-50"
           >
-            Select Folder
+            {t('settings.drive.browser.selectFolder')}
           </button>
         </div>
       </div>
