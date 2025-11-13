@@ -4,8 +4,12 @@ import Episode from '../models/Episode.js';
 import DownloadHistory from '../models/DownloadHistory.js';
 import Stats from '../models/Stats.js';
 import { logger } from '../utils/logger.js';
+import { loadUserKey, decryptDocuments, decryptDocument } from '../middleware/encryption.js';
 
 const router = express.Router();
+
+// Apply encryption middleware to all routes
+router.use(loadUserKey);
 
 // Get current statistics
 router.get('/current', async (req, res) => {
@@ -77,10 +81,20 @@ router.get('/downloads', async (req, res) => {
     if (podcast) filter.podcast = podcast;
     
     const downloads = await DownloadHistory.find(filter)
-      .populate('episode', 'title')
-      .populate('podcast', 'name')
+      .populate('episode')
+      .populate('podcast')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
+    
+    // Decrypt populated episodes and podcasts
+    downloads.forEach(download => {
+      if (download.episode) {
+        decryptDocument(download.episode, req.userKey);
+      }
+      if (download.podcast) {
+        decryptDocument(download.podcast, req.userKey);
+      }
+    });
     
     res.json(downloads);
   } catch (error) {
@@ -94,8 +108,11 @@ router.get('/podcasts', async (req, res) => {
   try {
     const podcasts = await Podcast.find({ userId: req.user.id });
     
+    // Decrypt all podcasts
+    const decryptedPodcasts = decryptDocuments(podcasts, req.userKey);
+    
     const podcastStats = await Promise.all(
-      podcasts.map(async (podcast) => {
+      decryptedPodcasts.map(async (podcast) => {
         const totalEpisodes = await Episode.countDocuments({ podcast: podcast._id });
         const downloaded = await Episode.countDocuments({ 
           podcast: podcast._id, 

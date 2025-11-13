@@ -4,18 +4,25 @@ import Podcast from '../models/Podcast.js';
 import SystemSettings from '../models/SystemSettings.js';
 import { logger } from '../utils/logger.js';
 import { parseFeed } from '../services/rssParser.js';
+import { loadUserKey, decryptDocuments, decryptDocument, encryptDocument } from '../middleware/encryption.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Apply encryption middleware to all routes
+router.use(loadUserKey);
+
 // Export podcasts to JSON
 router.get('/export', async (req, res) => {
   try {
-    const podcasts = await Podcast.find({ userId: req.user.id }).select('name rssUrl folderName enabled keepEpisodeCount');
+    const podcasts = await Podcast.find({ userId: req.user.id });
     const settings = await SystemSettings.getSettings(req.user.id);
     
+    // Decrypt all podcasts
+    const decryptedPodcasts = decryptDocuments(podcasts, req.userKey);
+    
     const exportData = {
-      podcasts: podcasts.map(p => ({
+      podcasts: decryptedPodcasts.map(p => ({
         name: p.name,
         rss_url: p.rssUrl,
         folder_name: p.folderName,
@@ -64,12 +71,20 @@ router.post('/import', upload.single('file'), async (req, res) => {
         // Check if podcast already exists for this user
         const existing = await Podcast.findOne({ 
           userId: req.user.id,
-          rssUrl: podcastData.rss_url 
+          encryptedRssUrl: { $exists: true }
         });
         
+        // If we have existing podcasts, we need to check them manually
+        // since RSS URLs are encrypted
         if (existing) {
-          skipped++;
-          continue;
+          const allPodcasts = await Podcast.find({ userId: req.user.id });
+          const decryptedPodcasts = decryptDocuments(allPodcasts, req.userKey);
+          const duplicate = decryptedPodcasts.find(p => p.rssUrl === podcastData.rss_url);
+          
+          if (duplicate) {
+            skipped++;
+            continue;
+          }
         }
         
         // Validate RSS feed
@@ -82,18 +97,25 @@ router.post('/import', upload.single('file'), async (req, res) => {
           continue;
         }
         
-        // Create podcast
-        await Podcast.create({
+        // Create podcast with virtual fields
+        const podcast = new Podcast({
           userId: req.user.id,
-          name: podcastData.name,
-          rssUrl: podcastData.rss_url,
-          description: feedData.description,
-          imageUrl: feedData.imageUrl,
-          author: feedData.author,
-          folderName: podcastData.folder_name || podcastData.name.replace(/[^a-z0-9]/gi, '_'),
           enabled: podcastData.enabled !== false,
           keepEpisodeCount: podcastData.keep_count || 10
         });
+        
+        // Set virtual fields (will be encrypted on save)
+        podcast.name = podcastData.name;
+        podcast.rssUrl = podcastData.rss_url;
+        podcast.description = feedData.description;
+        podcast.imageUrl = feedData.imageUrl;
+        podcast.author = feedData.author;
+        podcast.folderName = podcastData.folder_name || podcastData.name.replace(/[^a-z0-9]/gi, '_');
+        podcast.driveFolderName = podcastData.name;
+        
+        // Encrypt before saving
+        encryptDocument(podcast, req.userKey);
+        await podcast.save();
         
         imported++;
       } catch (error) {
