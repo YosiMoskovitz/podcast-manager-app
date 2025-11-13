@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/User.js';
 import UserEncryptionKey from '../models/UserEncryptionKey.js';
 import encryptionService from '../services/encryption.js';
+import userKeyManager from '../services/userKeyManager.js';
 import { logger } from '../utils/logger.js';
 
 // Register Google OAuth strategy only when credentials are present.
@@ -51,6 +52,7 @@ if (!hasGoogleCreds) {
           });
           
           // Set virtual fields and encrypt
+          user.email = profile.emails[0].value;
           user.name = profile.displayName;
           user.picture = profile.photos[0]?.value;
           user.encrypt(userKey);
@@ -83,6 +85,11 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
+    
+    // Decrypt user data before attaching to req.user
+    const userKey = await userKeyManager.getUserKey(id);
+    user.decrypt(userKey);
+    
     done(null, user);
   } catch (error) {
     logger.error('Error deserializing user:', error);
