@@ -4,6 +4,7 @@ import Episode from '../models/Episode.js';
 import Podcast from '../models/Podcast.js';
 import DownloadHistory from '../models/DownloadHistory.js';
 import { uploadStreamToDrive } from './cloudStorage.js';
+import userKeyManager from './userKeyManager.js';
 
 // Helper function to retry download on network errors
 async function downloadWithRetry(url, maxRetries = 3) {
@@ -42,6 +43,12 @@ export async function downloadEpisode(episode, podcast, userId) {
   const startTime = new Date();
   
   try {
+    // Load user's encryption key
+    const userKey = await userKeyManager.getUserKey(userId);
+    
+    // Decrypt episode to get audio URL and title
+    episode.decrypt(userKey);
+    
     logger.info(`Starting download: ${episode.title}`);
     
     // Update episode status
@@ -107,15 +114,25 @@ export async function downloadEpisode(episode, podcast, userId) {
     const endTime = new Date();
     const duration = (endTime - startTime) / 1000;
     
-    // Update episode with Drive info and preserve the original filename used for upload
-    await Episode.findByIdAndUpdate(episode._id, {
+    // Prepare encrypted updates
+    const episodeUpdates = {
       status: 'completed',
       downloaded: true,
       downloadDate: endTime,
       cloudFileId: uploadResult.fileId,
       cloudUrl: uploadResult.webViewLink,
-      fileSize: uploadResult.size,
-      originalFileName: `${cleanedTitle}.mp3`
+      fileSize: uploadResult.size
+    };
+    
+    // Create a temporary episode object for encrypting originalFileName
+    const tempEpisode = new Episode(episodeUpdates);
+    tempEpisode.originalFileName = `${cleanedTitle}.mp3`;
+    tempEpisode.encrypt(userKey);
+    
+    // Update episode with encrypted data
+    await Episode.findByIdAndUpdate(episode._id, {
+      ...episodeUpdates,
+      encryptedOriginalFileName: tempEpisode.encryptedOriginalFileName
     });
     
     // Update history

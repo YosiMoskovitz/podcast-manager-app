@@ -1,6 +1,8 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/User.js';
+import UserEncryptionKey from '../models/UserEncryptionKey.js';
+import encryptionService from '../services/encryption.js';
 import { logger } from '../utils/logger.js';
 
 // Register Google OAuth strategy only when credentials are present.
@@ -21,27 +23,47 @@ if (!hasGoogleCreds) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          // Hash the Google ID for lookup
+          const hashedGoogleId = encryptionService.hashGoogleId(profile.id);
+          const emailHash = encryptionService.hashEmail(profile.emails[0].value);
+          
           // Check if user already exists
-          let user = await User.findOne({ googleId: profile.id });
+          let user = await User.findOne({ googleId: hashedGoogleId });
 
           if (user) {
             // Update last login
             user.lastLogin = new Date();
             await user.save();
-            logger.info(`User logged in: ${user.email}`);
+            logger.info(`User logged in: ${hashedGoogleId.substring(0, 8)}...`);
             return done(null, user);
           }
 
-          // Create new user
-          user = await User.create({
-            googleId: profile.id,
-            email: profile.emails[0].value,
-            name: profile.displayName,
-            picture: profile.photos[0]?.value,
+          // Create new user with encryption
+          // Generate encryption key for new user
+          const userKey = encryptionService.generateUserKey();
+          const encryptedUserKey = encryptionService.encryptUserKey(userKey);
+          
+          // Create user with encrypted fields
+          user = new User({
+            googleId: hashedGoogleId,
+            emailHash: emailHash,
             lastLogin: new Date()
           });
+          
+          // Set virtual fields and encrypt
+          user.name = profile.displayName;
+          user.picture = profile.photos[0]?.value;
+          user.encrypt(userKey);
+          
+          await user.save();
+          
+          // Store encryption key
+          await UserEncryptionKey.create({
+            userId: user._id,
+            encryptedKey: encryptedUserKey
+          });
 
-          logger.info(`New user created: ${user.email}`);
+          logger.info(`New user created: ${hashedGoogleId.substring(0, 8)}...`);
           done(null, user);
         } catch (error) {
           logger.error('Error in Google OAuth strategy:', error);

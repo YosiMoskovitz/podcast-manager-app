@@ -2,15 +2,26 @@ import express from 'express';
 import Podcast from '../models/Podcast.js';
 import Episode from '../models/Episode.js';
 import { parseFeed, getLatestEpisodes } from '../services/rssParser.js';
+import { loadUserKey, decryptDocuments, decryptDocument, encryptDocument } from '../middleware/encryption.js';
 import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
+// Apply encryption middleware to all routes
+router.use(loadUserKey);
+
 // Get all podcasts
 router.get('/', async (req, res) => {
   try {
-    const podcasts = await Podcast.find({ userId: req.user.id }).sort({ name: 1 });
-    res.json(podcasts);
+    const podcasts = await Podcast.find({ userId: req.user.id });
+    
+    // Decrypt all podcasts
+    const decryptedPodcasts = decryptDocuments(podcasts, req.userKey);
+    
+    // Sort by decrypted name
+    decryptedPodcasts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    
+    res.json(decryptedPodcasts);
   } catch (error) {
     logger.error('Error fetching podcasts:', error);
     res.status(500).json({ error: 'Failed to fetch podcasts' });
@@ -29,6 +40,10 @@ router.get('/:id', async (req, res) => {
       .sort({ pubDate: -1 })
       .limit(50);
     
+    // Decrypt podcast and episodes
+    decryptDocument(podcast, req.userKey);
+    decryptDocuments(episodes, req.userKey);
+    
     res.json({ podcast, episodes });
   } catch (error) {
     logger.error('Error fetching podcast:', error);
@@ -44,17 +59,27 @@ router.post('/', async (req, res) => {
     // Validate RSS feed
     const feedData = await parseFeed(rssUrl);
     
-    const podcast = await Podcast.create({
+    // Create podcast with virtual fields
+    const podcast = new Podcast({
       userId: req.user.id,
-      name,
-      rssUrl,
-      description: feedData.description,
-      imageUrl: feedData.imageUrl,
-      author: feedData.author,
-      folderName: folderName || name.replace(/[^a-z0-9]/gi, '_'),
-      driveFolderName: driveFolderName || name, // Default to podcast name
       keepEpisodeCount: keepEpisodeCount || 10
     });
+    
+    // Set virtual fields (will be encrypted on save)
+    podcast.name = name;
+    podcast.rssUrl = rssUrl;
+    podcast.description = feedData.description;
+    podcast.imageUrl = feedData.imageUrl;
+    podcast.author = feedData.author;
+    podcast.folderName = folderName || name.replace(/[^a-z0-9]/gi, '_');
+    podcast.driveFolderName = driveFolderName || name;
+    
+    // Encrypt before saving
+    encryptDocument(podcast, req.userKey);
+    await podcast.save();
+    
+    // Decrypt for response
+    decryptDocument(podcast, req.userKey);
     
     logger.info(`Created podcast: ${name}`);
     res.status(201).json(podcast);
@@ -67,15 +92,23 @@ router.post('/', async (req, res) => {
 // Update podcast
 router.put('/:id', async (req, res) => {
   try {
-    const podcast = await Podcast.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const podcast = await Podcast.findOne({ _id: req.params.id, userId: req.user.id });
     
     if (!podcast) {
       return res.status(404).json({ error: 'Podcast not found' });
     }
+    
+    // Update virtual fields
+    Object.keys(req.body).forEach(key => {
+      podcast[key] = req.body[key];
+    });
+    
+    // Encrypt and save
+    encryptDocument(podcast, req.userKey);
+    await podcast.save();
+    
+    // Decrypt for response
+    decryptDocument(podcast, req.userKey);
     
     res.json(podcast);
   } catch (error) {
@@ -87,16 +120,21 @@ router.put('/:id', async (req, res) => {
 // Delete podcast
 router.delete('/:id', async (req, res) => {
   try {
-    const podcast = await Podcast.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    const podcast = await Podcast.findOne({ _id: req.params.id, userId: req.user.id });
     
     if (!podcast) {
       return res.status(404).json({ error: 'Podcast not found' });
     }
     
-    // Delete all episodes
+    // Decrypt for logging
+    decryptDocument(podcast, req.userKey);
+    const podcastName = podcast.name;
+    
+    // Delete podcast and episodes
+    await Podcast.findByIdAndDelete(req.params.id);
     await Episode.deleteMany({ podcast: req.params.id, userId: req.user.id });
     
-    logger.info(`Deleted podcast: ${podcast.name}`);
+    logger.info(`Deleted podcast: ${podcastName}`);
     res.json({ message: 'Podcast deleted successfully' });
   } catch (error) {
     logger.error('Error deleting podcast:', error);
@@ -113,17 +151,33 @@ router.post('/:id/refresh', async (req, res) => {
       return res.status(404).json({ error: 'Podcast not found' });
     }
     
+    // Decrypt to get RSS URL
+    decryptDocument(podcast, req.userKey);
+    
     const episodes = await getLatestEpisodes(podcast.rssUrl, 10);
     let newCount = 0;
     
     for (const episodeData of episodes) {
       const exists = await Episode.findOne({ guid: episodeData.guid });
       if (!exists) {
-        await Episode.create({
+        const episode = new Episode({
           userId: req.user.id,
-          ...episodeData,
-          podcast: podcast._id
+          podcast: podcast._id,
+          guid: episodeData.guid,
+          pubDate: episodeData.pubDate,
+          duration: episodeData.duration,
+          fileSize: episodeData.fileSize,
+          status: episodeData.status
         });
+        
+        // Set virtual fields
+        episode.title = episodeData.title;
+        episode.description = episodeData.description;
+        episode.audioUrl = episodeData.audioUrl;
+        
+        // Encrypt and save
+        encryptDocument(episode, req.userKey);
+        await episode.save();
         newCount++;
       }
     }

@@ -6,6 +6,7 @@ import SystemSettings from '../models/SystemSettings.js';
 import { getLatestEpisodes } from './rssParser.js';
 import { downloadEpisode } from './downloader.js';
 import { cleanupOldEpisodes } from './cloudStorage.js';
+import userKeyManager from './userKeyManager.js';
 import { logger } from '../utils/logger.js';
 import syncStatus from './syncStatus.js';
 
@@ -54,6 +55,12 @@ export async function checkAndDownloadPodcasts() {
     
     for (const podcast of podcasts) {
       try {
+        // Load user's encryption key for this podcast
+        const userKey = await userKeyManager.getUserKey(podcast.userId);
+        
+        // Decrypt podcast to get RSS URL
+        podcast.decrypt(userKey);
+        
         logger.info(`Checking podcast: ${podcast.name}`);
         
         const episodes = await getLatestEpisodes(podcast.rssUrl, maxEpisodes);
@@ -64,10 +71,25 @@ export async function checkAndDownloadPodcasts() {
         for (const episodeData of episodes) {
           const exists = await Episode.findOne({ guid: episodeData.guid });
           if (!exists) {
-            const episode = await Episode.create({
-              ...episodeData,
-              podcast: podcast._id
+            const episode = new Episode({
+              userId: podcast.userId,
+              podcast: podcast._id,
+              guid: episodeData.guid,
+              pubDate: episodeData.pubDate,
+              duration: episodeData.duration,
+              fileSize: episodeData.fileSize,
+              status: episodeData.status
             });
+            
+            // Set virtual fields
+            episode.title = episodeData.title;
+            episode.description = episodeData.description;
+            episode.audioUrl = episodeData.audioUrl;
+            
+            // Encrypt before saving
+            episode.encrypt(userKey);
+            await episode.save();
+            
             newCount++;
             newEpisodesForPodcast.push(episode);
           }

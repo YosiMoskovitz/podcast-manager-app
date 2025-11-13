@@ -1,143 +1,163 @@
 # Podcast Manager App
 
-A full-stack web application for managing podcast RSS feeds with automated downloads, cloud storage synchronization, and multi-language support.
+A full-stack web application for managing podcast RSS feeds with automated downloads and cloud storage integration. Built with React, Node.js, Express, and MongoDB.
 
 ## Features
 
-### Core Functionality
-- **RSS Feed Management** - Subscribe to and manage podcast RSS feeds
-- **Automated Downloads** - Schedule automatic episode downloads per user
-- **Cloud Storage Integration** - Sync episodes to Google Drive with folder browsing
-- **Episode Management** - Track, download, and organize podcast episodes
-- **Statistics Dashboard** - View download history and usage statistics
-- **Multi-language Support** - Built-in internationalization (English & Hebrew)
+### 🎙️ Podcast Management
+- Add and manage podcast RSS feeds
+- Automatic episode discovery and updates
+- Episode tracking and download history
+- Import/export functionality for backup and migration
 
-### Authentication & Security
-- Google OAuth 2.0 authentication via Passport.js
-- Secure session management with MongoDB store
-- Encrypted credential storage for cloud services
-- User-specific podcast and episode management
+### 📥 Automated Downloads
+- Scheduled automatic checking for new episodes
+- User-specific download schedules
+- Manual sync triggers
+- Download verification and integrity checks
 
-### User Experience
-- Responsive modern UI built with React and Tailwind CSS
-- Real-time sync progress tracking
-- Toast notifications for user feedback
-- Confirmation modals for critical actions
-- Interactive data visualizations with Recharts
+### ☁️ Cloud Storage Integration
+- Google Drive integration for storing downloaded episodes
+- Folder browser for organizing content
+- Encrypted credential storage
+- Automatic upload after download
+
+### 🔒 Security & Privacy
+- Google OAuth 2.0 authentication
+- User-specific encryption keys
+- Encrypted sensitive data storage
+- Session-based authentication with MongoDB store
+
+### 📊 Statistics & Monitoring
+- Download statistics and history
+- Storage usage tracking
+- System health monitoring
+- Activity logs
+
+### 🌐 Internationalization
+- Multi-language support (English, Hebrew)
+- Browser language detection
+- Easy language switching
 
 ## Tech Stack
 
 ### Frontend
-- **Framework**: React 18.2
-- **Routing**: React Router DOM 6.20
-- **Styling**: Tailwind CSS with PostCSS
-- **Build Tool**: Vite
-- **Icons**: Lucide React
-- **Charts**: Recharts
-- **i18n**: i18next + react-i18next
-- **HTTP Client**: Axios
+- **React 18** - UI library
+- **React Router** - Client-side routing
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
+- **Recharts** - Data visualization
+- **i18next** - Internationalization
 
 ### Backend
-- **Runtime**: Node.js (v20.18.0+)
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: Passport.js (Google OAuth 2.0)
-- **Sessions**: express-session with connect-mongo
-- **Scheduling**: node-cron
-- **RSS Parsing**: rss-parser
-- **Cloud Storage**: Google APIs (Drive v3)
-- **Logging**: Winston
-- **File Uploads**: Multer
+- **Node.js** - Runtime environment
+- **Express** - Web framework
+- **MongoDB** - Database
+- **Mongoose** - MongoDB ODM
+- **Passport.js** - Authentication (Google OAuth 2.0)
+- **Winston** - Logging
+
+### Key Libraries
+- **node-cron** - Scheduled tasks
+- **rss-parser** - RSS feed parsing
+- **googleapis** - Google Drive API
+- **axios** - HTTP client
+- **multer** - File upload handling
 
 ## Project Structure
 
 ```
 podcast-manager-app/
-├── server/                      # Backend Node.js/Express server
-│   ├── config/                  # Configuration files
-│   │   ├── database.js         # MongoDB connection
-│   │   ├── env.js              # Environment validation
-│   │   └── passport.js         # OAuth strategy
-│   ├── middleware/             # Express middleware
-│   │   └── auth.js             # Authentication middleware
-│   ├── models/                 # Mongoose models
-│   │   ├── User.js
+├── server/                 # Backend code
+│   ├── config/            # Configuration files
+│   │   ├── database.js    # MongoDB connection
+│   │   ├── env.js         # Environment variables
+│   │   └── passport.js    # Authentication strategy
+│   ├── middleware/        # Express middleware
+│   │   ├── auth.js        # Authentication middleware
+│   │   └── encryption.js  # Encryption middleware
+│   ├── models/            # Mongoose models
 │   │   ├── Podcast.js
 │   │   ├── Episode.js
+│   │   ├── User.js
 │   │   ├── DownloadHistory.js
 │   │   ├── DriveCredentials.js
 │   │   ├── SystemSettings.js
-│   │   └── Stats.js
-│   ├── routes/                 # API routes
+│   │   ├── Stats.js
+│   │   └── UserEncryptionKey.js
+│   ├── routes/            # API routes
 │   │   ├── auth.js
 │   │   ├── podcasts.js
 │   │   ├── episodes.js
 │   │   ├── drive.js
-│   │   ├── sync.js
-│   │   ├── stats.js
 │   │   ├── settings.js
+│   │   ├── stats.js
+│   │   ├── sync.js
 │   │   └── import-export.js
-│   ├── services/               # Business logic
-│   │   ├── rssParser.js        # RSS feed parsing
-│   │   ├── downloader.js       # Episode downloads
-│   │   ├── cloudStorage.js     # Google Drive integration
-│   │   ├── userScheduler.js    # Per-user scheduling
-│   │   ├── syncStatus.js       # Sync state management
-│   │   └── verifier.js         # File verification
-│   ├── utils/                  # Utilities
-│   │   └── logger.js           # Winston logger
-│   └── index.js                # Server entry point
-├── src/                        # Frontend React application
-│   ├── components/             # Reusable components
+│   ├── services/          # Business logic
+│   │   ├── cloudStorage.js
+│   │   ├── downloader.js
+│   │   ├── encryption.js
+│   │   ├── rssParser.js
+│   │   ├── scheduler.js
+│   │   ├── syncStatus.js
+│   │   ├── userKeyManager.js
+│   │   ├── userScheduler.js
+│   │   └── verifier.js
+│   ├── utils/
+│   │   └── logger.js      # Winston logger configuration
+│   └── index.js           # Server entry point
+├── src/                   # Frontend code
+│   ├── components/        # React components
 │   │   ├── Layout.jsx
 │   │   ├── Toast.jsx
 │   │   ├── ConfirmModal.jsx
-│   │   ├── SyncProgressModal.jsx
 │   │   ├── DriveFolderBrowser.jsx
 │   │   ├── LanguageSwitcher.jsx
+│   │   ├── SyncProgressModal.jsx
 │   │   └── VerificationModal.jsx
-│   ├── contexts/               # React contexts
+│   ├── contexts/          # React contexts
 │   │   ├── AuthContext.jsx
 │   │   └── LanguageContext.jsx
-│   ├── hooks/                  # Custom hooks
+│   ├── hooks/             # Custom React hooks
 │   │   └── useToast.js
-│   ├── locales/                # Translation files
+│   ├── locales/           # Translation files
 │   │   ├── en.json
 │   │   └── he.json
-│   ├── pages/                  # Page components
+│   ├── pages/             # Page components
 │   │   ├── Dashboard.jsx
 │   │   ├── Podcasts.jsx
 │   │   ├── Episodes.jsx
 │   │   ├── Statistics.jsx
 │   │   ├── Settings.jsx
 │   │   └── Login.jsx
-│   ├── services/               # Frontend services
-│   │   └── api.js              # API client
-│   ├── utils/                  # Frontend utilities
-│   │   └── apiUrl.js           # API URL configuration
-│   ├── App.jsx                 # App component
-│   ├── main.jsx                # React entry point
-│   ├── i18n.js                 # i18next configuration
-│   └── index.css               # Global styles
-├── downloads/                  # Episode download directory
-├── logs/                       # Application logs
-├── Dockerfile                  # Docker configuration
-├── deploy.sh                   # Deployment script
-├── package.json                # Dependencies & scripts
-├── vite.config.js              # Vite configuration
-├── tailwind.config.js          # Tailwind configuration
-├── postcss.config.js           # PostCSS configuration
-└── index.html                  # HTML template
+│   ├── services/
+│   │   └── api.js         # API client
+│   ├── utils/
+│   │   └── apiUrl.js      # API URL configuration
+│   ├── App.jsx            # Main app component
+│   ├── main.jsx           # React entry point
+│   ├── i18n.js            # i18n configuration
+│   └── index.css          # Global styles
+├── downloads/             # Downloaded episode files
+├── logs/                  # Application logs
+├── .env                   # Environment variables (not in repo)
+├── package.json
+├── vite.config.js
+├── tailwind.config.js
+├── Dockerfile
+└── README.md
 ```
 
+## Prerequisites
+
+- **Node.js** 16.x or higher
+- **MongoDB** 4.x or higher (local or Atlas)
+- **Google Cloud Project** with OAuth 2.0 credentials and Drive API enabled
+- **npm** or **yarn**
+
 ## Installation
-
-### Prerequisites
-- Node.js v20.18.0 or higher
-- MongoDB database (local or cloud)
-- Google Cloud Platform project with OAuth 2.0 credentials and Drive API enabled
-
-### Setup
 
 1. **Clone the repository**
    ```bash
@@ -150,79 +170,65 @@ podcast-manager-app/
    npm install
    ```
 
-3. **Configure environment variables**
+3. **Set up environment variables**
    
    Create a `.env` file in the root directory:
    ```env
-   # Database
+   # Server Configuration
+   PORT=5000
+   NODE_ENV=development
+   
+   # MongoDB
    MONGODB_URI=mongodb://localhost:27017/podcast-manager
    
-   # Security
-   SESSION_SECRET=your-session-secret-key
-   ENCRYPTION_KEY=your-32-character-encryption-key
+   # Session Secret (generate a random string)
+   SESSION_SECRET=your-secure-random-session-secret
    
    # Google OAuth 2.0
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
    GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
    
-   # Application
-   PORT=5000
-   NODE_ENV=development
+   # Frontend URL
    CLIENT_URL=http://localhost:5173
    
-   # Production (optional)
-   PROD_PROVIDER=render  # or 'fly' for Fly.io
-   RUNTIME_API_URL=https://your-production-domain.com
+   # Encryption Master Key (generate a secure random key)
+   MASTER_ENCRYPTION_KEY=your-32-character-encryption-key
    ```
 
-4. **Set up Google Cloud Platform**
-   - Create a project in [Google Cloud Console](https://console.cloud.google.com)
+4. **Set up Google OAuth 2.0**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing one
    - Enable Google Drive API
-   - Configure OAuth 2.0 credentials
-   - Add authorized redirect URIs:
-     - Development: `http://localhost:5000/api/auth/google/callback`
-     - Production: `https://your-domain.com/api/auth/google/callback`
+   - Create OAuth 2.0 credentials
+   - Add authorized redirect URI: `http://localhost:5000/api/auth/google/callback`
+   - Copy Client ID and Client Secret to `.env` file
 
-## Usage
+5. **Start MongoDB**
+   ```bash
+   # If using local MongoDB
+   mongod
+   ```
+
+## Running the Application
 
 ### Development Mode
-
-Run both frontend and backend concurrently:
 ```bash
+# Run both frontend and backend concurrently
 npm run dev
 ```
 
-Or run separately:
-```bash
-# Backend only (port 5000)
-npm run server
-
-# Frontend only (port 5173)
-npm run client
-```
-
-Access the application at `http://localhost:5173`
+This will start:
+- Backend server at `http://localhost:5000`
+- Frontend dev server at `http://localhost:5173`
 
 ### Production Mode
-
-1. **Build the frontend**
-   ```bash
-   npm run build
-   ```
-
-2. **Start the server**
-   ```bash
-   npm start
-   ```
-
-The server will serve the built frontend from the `dist/` directory.
-
-### Docker Deployment
-
 ```bash
-docker build -t podcast-manager .
-docker run -p 5000:5000 --env-file .env podcast-manager
+# Build the frontend
+npm run build
+
+# Start the server (serves both API and static files)
+npm start
 ```
 
 ## API Endpoints
@@ -230,107 +236,109 @@ docker run -p 5000:5000 --env-file .env podcast-manager
 ### Authentication
 - `GET /api/auth/google` - Initiate Google OAuth
 - `GET /api/auth/google/callback` - OAuth callback
-- `GET /api/auth/check` - Check authentication status
-- `POST /api/auth/logout` - Logout user
+- `GET /api/auth/user` - Get current user
+- `POST /api/auth/logout` - Logout
 
 ### Podcasts
-- `GET /api/podcasts` - List user's podcasts
+- `GET /api/podcasts` - Get all podcasts
 - `POST /api/podcasts` - Add new podcast
 - `PUT /api/podcasts/:id` - Update podcast
-- `DELETE /api/podcasts/:id` - Remove podcast
-- `POST /api/podcasts/refresh-all` - Refresh all feeds
+- `DELETE /api/podcasts/:id` - Delete podcast
+- `POST /api/podcasts/refresh` - Refresh all feeds
 
 ### Episodes
-- `GET /api/episodes` - List episodes (with filters)
+- `GET /api/episodes` - Get episodes (with filters)
+- `GET /api/episodes/:id` - Get episode details
+- `PUT /api/episodes/:id` - Update episode
 - `POST /api/episodes/:id/download` - Download episode
-- `DELETE /api/episodes/:id` - Delete episode
-- `POST /api/episodes/:id/verify` - Verify episode file
+- `POST /api/episodes/:id/verify` - Verify downloaded file
 
-### Google Drive
-- `GET /api/drive/auth-status` - Check Drive authorization
-- `GET /api/drive/auth-url` - Get Drive OAuth URL
-- `POST /api/drive/callback` - Handle Drive OAuth callback
-- `POST /api/drive/revoke` - Revoke Drive access
+### Drive Integration
+- `POST /api/drive/setup` - Set up Google Drive credentials
+- `GET /api/drive/status` - Check Drive connection status
 - `GET /api/drive/folders` - Browse Drive folders
+- `POST /api/drive/select-folder` - Select storage folder
 
-### Sync & Settings
-- `POST /api/sync/upload` - Upload episode to Drive
-- `GET /api/sync/status` - Get sync status
+### Settings
 - `GET /api/settings` - Get user settings
 - `PUT /api/settings` - Update settings
 
 ### Statistics
-- `GET /api/stats` - Get user statistics
+- `GET /api/stats` - Get download statistics
+
+### Sync
+- `POST /api/sync/trigger` - Manually trigger sync
+- `GET /api/sync/status` - Get sync status
 
 ### Import/Export
-- `GET /api/import-export/export` - Export data
+- `POST /api/import-export/export` - Export data
 - `POST /api/import-export/import` - Import data
 
-## Key Features Explained
+## Features in Detail
 
-### Automated Scheduling
-- Per-user cron schedules for RSS feed checking
-- Configurable check intervals (hourly, daily, weekly)
-- Automatic episode downloads based on user preferences
+### Scheduled Downloads
+The app uses `node-cron` to automatically check for new episodes based on user-defined schedules:
+- Hourly, daily, or weekly checks
+- User-specific schedules
+- Automatic download and upload to Google Drive
 
-### Cloud Storage Sync
-- Selective episode upload to Google Drive
-- Folder browser for choosing destination
-- Progress tracking during sync operations
-- Automatic retry mechanism
+### Encryption
+Sensitive data is encrypted using AES-256-GCM:
+- User-specific encryption keys
+- Master key for system-level encryption
+- Encrypted Google Drive credentials
 
-### Multi-language Support
-- Language detection based on browser settings
-- Manual language switching (English/Hebrew)
-- RTL support for Hebrew
-- Comprehensive translation coverage
+### Verification System
+Downloaded files are verified to ensure integrity:
+- File size validation
+- Metadata verification
+- Automatic retry on failure
 
-### Security
-- OAuth 2.0 authentication
-- Encrypted storage of cloud credentials
-- Secure session management
-- Protected API routes with authentication middleware
+## Docker Support
 
-## Development
+Build and run with Docker:
 
-### Code Structure
-- **Models**: Mongoose schemas for data persistence
-- **Services**: Business logic isolated from routes
-- **Middleware**: Request processing and authentication
-- **Context Providers**: React state management
-- **Hooks**: Reusable React logic
+```bash
+# Build the image
+docker build -t podcast-manager .
 
-### Logging
-Winston logger configured for:
-- Console output in development
-- File rotation in production (`logs/` directory)
-- Error tracking and debugging
+# Run the container
+docker run -p 5000:5000 --env-file .env podcast-manager
+```
 
-### Error Handling
-- Global error handlers on both frontend and backend
-- User-friendly error messages
-- Detailed logging for debugging
+## Environment Variables Reference
 
-## Environment Variables
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `PORT` | Server port | Yes |
+| `NODE_ENV` | Environment (development/production) | Yes |
+| `MONGODB_URI` | MongoDB connection string | Yes |
+| `SESSION_SECRET` | Session encryption secret | Yes |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | Yes |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Yes |
+| `GOOGLE_CALLBACK_URL` | OAuth callback URL | Yes |
+| `CLIENT_URL` | Frontend URL for CORS | Yes |
+| `MASTER_ENCRYPTION_KEY` | Master encryption key (32 chars) | Yes |
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `MONGODB_URI` | Yes | MongoDB connection string |
-| `SESSION_SECRET` | Yes | Secret for session encryption |
-| `ENCRYPTION_KEY` | Yes | 32-character key for credential encryption |
-| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
-| `GOOGLE_CALLBACK_URL` | Yes | OAuth redirect URI |
-| `PORT` | No | Server port (default: 5000) |
-| `NODE_ENV` | No | Environment (development/production) |
-| `CLIENT_URL` | No | Frontend URL for CORS |
-| `PROD_PROVIDER` | No | Production platform (render/fly) |
-| `RUNTIME_API_URL` | No | Production API URL |
+## Logging
+
+Logs are stored in the `logs/` directory:
+- `error.log` - Error level logs
+- `combined.log` - All logs
+- Console output in development mode
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
 ISC
 
-## Contributing
+## Support
 
-Contributions are welcome! Please ensure code quality and test coverage before submitting pull requests.
+For issues and questions, please open an issue on GitHub.

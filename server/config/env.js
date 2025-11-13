@@ -4,10 +4,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Validate critical environment variables
-if (!process.env.ENCRYPTION_KEY) {
-  console.error('❌ ERROR: ENCRYPTION_KEY not found in .env file!');
+if (!process.env.ENCRYPTION_MASTER_KEY) {
+  console.error('❌ ERROR: ENCRYPTION_MASTER_KEY not found in .env file!');
   console.error('The server cannot start without this key.');
-  console.error('Please ensure your .env file contains: ENCRYPTION_KEY=...');
+  console.error('This key is used to encrypt per-user encryption keys.');
+  console.error('Generate a new key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  console.error('Please ensure your .env file contains: ENCRYPTION_MASTER_KEY=...');
   process.exit(1);
 }
 
@@ -25,4 +27,5 @@ if (!process.env.SESSION_SECRET) {
 console.log('✅ Environment variables loaded successfully');
 console.log('✅ Database configured: MongoDB');
 console.log('✅ Session management configured');
+console.log('✅ Encryption configured (master key loaded)');
 

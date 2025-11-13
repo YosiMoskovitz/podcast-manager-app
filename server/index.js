@@ -11,6 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectDatabase } from './config/database.js';
 import { startUserScheduler, triggerManualCheckForUser } from './services/userScheduler.js';
+import encryptionService from './services/encryption.js';
 import { logger } from './utils/logger.js';
 import passport from './config/passport.js';
 
@@ -36,6 +37,14 @@ dirs.forEach(dir => {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
+
+// Initialize encryption service
+if (!process.env.ENCRYPTION_MASTER_KEY) {
+  logger.error('ENCRYPTION_MASTER_KEY is required in environment variables');
+  process.exit(1);
+}
+encryptionService.initialize(process.env.ENCRYPTION_MASTER_KEY);
+logger.info('Encryption service initialized');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
