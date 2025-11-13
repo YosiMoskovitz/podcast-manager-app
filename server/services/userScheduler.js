@@ -270,7 +270,8 @@ async function processUserPodcasts(userId, userEmail) {
         if (eps.length === 0) continue;
         try {
           const { start } = await Podcast.reserveSequenceBlock(podcast._id, eps.length);
-          eps.sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+          // Sort by pubDate ascending (oldest first) so oldest gets lowest number, newest gets highest
+          eps.sort((a, b) => (a.pubDate || 0) - (b.pubDate || 0));
           const ops = [];
           for (let i = 0; i < eps.length; i++) {
             const seq = start + i;

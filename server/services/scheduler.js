@@ -107,8 +107,8 @@ export async function checkAndDownloadPodcasts() {
             // Reserve numbers from Podcast atomically
             const { start } = await Podcast.reserveSequenceBlock(podcast._id, newEpisodesForPodcast.length);
 
-            // Sort by pubDate desc so higher sequence = older index (matching existing logic)
-            newEpisodesForPodcast.sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+            // Sort by pubDate ascending (oldest first) so oldest gets lowest number, newest gets highest
+            newEpisodesForPodcast.sort((a, b) => (a.pubDate || 0) - (b.pubDate || 0));
 
             const bulkOps = [];
             for (let i = 0; i < newEpisodesForPodcast.length; i++) {
