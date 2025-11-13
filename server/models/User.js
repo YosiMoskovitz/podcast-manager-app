@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   // Encrypted email for display purposes
   encryptedEmail: {
     type: String,
-    required: true
+    required: false // Not required to support migration of existing users
   },
   // Encrypted display name
   encryptedName: {

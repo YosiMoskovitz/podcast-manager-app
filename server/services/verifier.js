@@ -4,6 +4,7 @@ import DriveCredentials from '../models/DriveCredentials.js';
 import { getDriveClient, listFilesInFolder, getOrCreatePodcastFolder } from './cloudStorage.js';
 import syncStatus from './syncStatus.js';
 import { logger } from '../utils/logger.js';
+import userKeyManager from './userKeyManager.js';
 
 export async function verifyDriveConsistency(userId) {
   const drive = getDriveClient();
@@ -12,10 +13,16 @@ export async function verifyDriveConsistency(userId) {
     return { status: 'skipped', reason: 'Drive not configured', podcasts: [] };
   }
 
+  // Get user's encryption key to decrypt podcasts
+  const userKey = await userKeyManager.getUserKey(userId);
+
   const podcasts = await Podcast.find({ userId });
   const results = [];
 
   for (const podcast of podcasts) {
+    // Decrypt podcast to access name and other fields
+    podcast.decrypt(userKey);
+    
     // Ensure folder exists (do not create if none to avoid noise)
     const folderId = podcast.driveFolderId || null;
     if (!folderId) {
@@ -107,6 +114,10 @@ export async function resyncEpisodesByIds(episodeIds) {
   const PodcastModel = (await import('../models/Podcast.js')).default;
   const { downloadEpisode } = await import('./downloader.js');
 
+  // Get user's encryption key
+  const userId = episodes[0]?.userId;
+  const userKey = await userKeyManager.getUserKey(userId);
+
   // Start sync tracking for retry operation
   // We skip discovery phase and go straight to download
   syncStatus.startSync(0); // 0 podcasts to check
@@ -122,6 +133,9 @@ export async function resyncEpisodesByIds(episodeIds) {
         logger.warn(`Podcast ${podcastId} not found, skipping episodes`);
         continue;
       }
+      
+      // Decrypt podcast to access its fields
+      podcast.decrypt(userKey);
       
       for (const ep of eps) {
         // mark pending and clear old cloud fields to force re-upload

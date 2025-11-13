@@ -10,6 +10,7 @@ import { cleanupOldEpisodes } from './cloudStorage.js';
 import { logger } from '../utils/logger.js';
 import { initializeDrive } from './cloudStorage.js';
 import syncStatus from './syncStatus.js';
+import userKeyManager from './userKeyManager.js';
 
 // Track which users are currently being processed to avoid overlap
 const processingUsers = new Set();
@@ -131,6 +132,9 @@ async function processUserPodcasts(userId, userEmail) {
   try {
     logger.info(`Starting podcast check for user: ${userEmail}`);
     
+    // Load user's encryption key
+    const userKey = await userKeyManager.getUserKey(userId);
+    
     // Initialize Drive for this user if they have it configured
     await initializeDrive(userId);
     
@@ -158,6 +162,15 @@ async function processUserPodcasts(userId, userEmail) {
     
     for (const podcast of podcasts) {
       try {
+        // Decrypt podcast to get RSS URL and name
+        podcast.decrypt(userKey);
+        
+        // Skip podcasts without RSS URL
+        if (!podcast.rssUrl) {
+          logger.warn(`[${userEmail}] Skipping podcast ${podcast.name}: No RSS URL configured`);
+          continue;
+        }
+        
         logger.info(`[${userEmail}] Checking RSS: ${podcast.name}`);
         
         // Get latest episodes from RSS feed

@@ -81,6 +81,9 @@ router.post('/:id/download', async (req, res) => {
       return res.status(404).json({ error: 'Podcast not found' });
     }
     
+    // Decrypt podcast to access its fields
+    decryptDocument(podcast, req.userKey);
+    
     // Check if sync is already running
     if (!syncStatus.canStartSync()) {
       return res.status(409).json({ error: 'Another sync operation is already in progress' });
@@ -117,6 +120,9 @@ router.post('/:id/resync', async (req, res) => {
 
     const podcast = await Podcast.findOne({ _id: episode.podcast, userId: req.user.id });
     if (!podcast) return res.status(404).json({ error: 'Podcast not found' });
+
+    // Decrypt podcast to access its fields
+    decryptDocument(podcast, req.userKey);
 
     // Check if sync is already running
     if (!syncStatus.canStartSync()) {

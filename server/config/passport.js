@@ -32,6 +32,17 @@ if (!hasGoogleCreds) {
           let user = await User.findOne({ googleId: hashedGoogleId });
 
           if (user) {
+            // Get user's encryption key for potential updates
+            const userKey = await userKeyManager.getUserKey(user._id);
+            
+            // Migration: If user doesn't have encryptedEmail, add it now
+            if (!user.encryptedEmail) {
+              user.email = profile.emails[0].value;
+              user.encrypt(userKey);
+              await user.save();
+              logger.info(`Migrated user to include encrypted email: ${hashedGoogleId.substring(0, 8)}...`);
+            }
+            
             // Update last login
             user.lastLogin = new Date();
             await user.save();

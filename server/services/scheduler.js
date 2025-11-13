@@ -61,6 +61,12 @@ export async function checkAndDownloadPodcasts() {
         // Decrypt podcast to get RSS URL
         podcast.decrypt(userKey);
         
+        // Skip podcasts without RSS URL
+        if (!podcast.rssUrl) {
+          logger.warn(`Skipping podcast ${podcast.name}: No RSS URL configured`);
+          continue;
+        }
+        
         logger.info(`Checking podcast: ${podcast.name}`);
         
         const episodes = await getLatestEpisodes(podcast.rssUrl, maxEpisodes);
