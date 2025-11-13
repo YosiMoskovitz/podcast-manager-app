@@ -62,6 +62,39 @@
       "alreadyRunning": "סנכרון כבר רץ",
       "failed": "נכשל להתחיל בדיקה ידנית"
     },
+    "syncModal": {
+      "titleRunning": "מסנכרן פודקאסטים",
+      "titleComplete": "סנכרון הושלם",
+      "processing": "מעבד",
+      "processed": "עובדו",
+      "checking": "בודק",
+      "checked": "נבדקו",
+      "downloading": "מוריד",
+      "downloaded": "הורדו",
+      "ofPodcasts": "מתוך {{total}} פודקאסטים",
+      "ofEpisodes": "מתוך {{total}} פרקים",
+      "progress": "התקדמות",
+      "currentProcessing": "מעבד: {{name}}",
+      "checkingPodcast": "בודק RSS: {{name}}",
+      "downloadingEpisode": "מוריד פרק...",
+      "newEpisodesFound": "פרקים חדשים",
+      "succeeded": "הצליחו",
+      "failed": "נכשלו",
+      "remaining": "נותרו",
+      "newEpisode": "פרק אחד חדש",
+      "newEpisode_plural": "{{count}} פרקים חדשים",
+      "retryFailed": "נסה שוב נכשלים ({{count}})",
+      "retryFailedTitle": "נסה שוב פרקים נכשלים",
+      "selectAll": "בחר הכל",
+      "clear": "נקה",
+      "close": "סגור",
+      "loadingFailed": "טוען פרקים נכשלים...",
+      "noFailedFound": "לא נמצאו פרקים נכשלים.",
+      "cancel": "ביטול",
+      "retrySelectedCount": "נסה שוב נבחרים ({{count}})",
+      "starting": "מתחיל...",
+      "retryTooltip": "נסה שוב להוריד פרקים נכשלים"
+    },
     "drive": {
       "connected": "מחובר",
       "notConnected": "לא מחובר",
@@ -95,6 +128,7 @@
     "title": "פודקאסטים",
     "addNew": "הוסף פודקאסט",
     "addNewTitle": "הוסף פודקאסט חדש",
+    "editTitle": "ערוך פודקאסט",
     "noPodcasts": "עדיין אין פודקאסטים",
     "noPodcastsDescription": "לחץ על \"הוסף פודקאסט\" כדי להתחיל",
     "noImage": "אין תמונה",
@@ -124,6 +158,8 @@
     "messages": {
       "createSuccess": "הפודקאסט נוצר בהצלחה",
       "createFailed": "נכשל ליצור פודקאסט",
+      "updateSuccess": "הפודקאסט עודכן בהצלחה",
+      "updateFailed": "נכשל לעדכן פודקאסט",
       "deleteConfirm": "למחוק את הפודקאסט \"{{name}}\"? זה גם ימחק את כל הפרקים.",
       "deleteSuccess": "הפודקאסט \"{{name}}\" נמחק",
       "deleteFailed": "נכשל למחוק פודקאסט",
@@ -140,7 +176,8 @@
     "help": {
       "driveFolderName": "זה שם התיקייה שתיווצר ב-Google Drive שלך. ברירת מחדל היא שם הפודקאסט.",
       "keepEpisodeCount": "מספר הפרקים האחרונים לשמור באחסון ענן",
-      "keepEpisodeCountTip": "💡 טיפ: הגדר ל-<strong>0</strong> כדי לשמור את כל הפרקים (ללא הגבלה)"
+      "keepEpisodeCountTip": "💡 טיפ: הגדר ל-<strong>0</strong> כדי לשמור את כל הפרקים (ללא הגבלה)",
+      "rssUrlNoEdit": "לא ניתן לשנות את כתובת ה-RSS לאחר היצירה"
     }
   },
   "episodes": {

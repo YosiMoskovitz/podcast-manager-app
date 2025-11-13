@@ -95,7 +95,23 @@ function Dashboard() {
       await triggerManualCheck();
       toast.success(t('dashboard.sync.started'));
       // Optimistically show modal while backend starts
-      setSyncStatus({ isRunning: true, progress: { total: 0, processed: 0, succeeded: 0, failed: 0, podcasts: [] }, startTime: new Date().toISOString() });
+      setSyncStatus({ 
+        isRunning: true, 
+        phase: 'discovery',
+        progress: { 
+          totalPodcasts: 0, 
+          podcastsChecked: 0, 
+          podcastsSucceeded: 0, 
+          podcastsFailed: 0, 
+          podcasts: [],
+          totalEpisodes: 0,
+          episodesDownloaded: 0,
+          episodesSucceeded: 0,
+          episodesFailed: 0,
+          episodes: []
+        }, 
+        startTime: new Date().toISOString() 
+      });
       // Start polling for progress regardless of immediate status
       const startTime = Date.now();
       if (pollInterval.current) { clearInterval(pollInterval.current); pollInterval.current = null; }

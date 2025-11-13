@@ -3,6 +3,7 @@ import Episode from '../models/Episode.js';
 import Podcast from '../models/Podcast.js';
 import { downloadEpisode } from '../services/downloader.js';
 import { logger } from '../utils/logger.js';
+import syncStatus from '../services/syncStatus.js';
 
 const router = express.Router();
 
@@ -62,9 +63,26 @@ router.post('/:id/download', async (req, res) => {
       return res.status(404).json({ error: 'Podcast not found' });
     }
     
-    // Start download in background
+    // Check if sync is already running
+    if (!syncStatus.canStartSync()) {
+      return res.status(409).json({ error: 'Another sync operation is already in progress' });
+    }
+    
+    // Start sync tracking for single episode download
+    syncStatus.startSync(0); // 0 podcasts to check
+    syncStatus.startDownloadPhase(1); // 1 episode
+    
+    // Start download with tracking
     downloadEpisode(episode, podcast, req.user.id)
-      .catch(err => logger.error('Download/upload failed:', err));
+      .then(() => {
+        syncStatus.updateEpisode(episode.title, podcast.name, 'success');
+        syncStatus.endSync();
+      })
+      .catch(err => {
+        logger.error('Download/upload failed:', err);
+        syncStatus.updateEpisode(episode.title, podcast.name, 'failed', err.message);
+        syncStatus.endSync();
+      });
     
     res.json({ message: 'Download started', episodeId: episode._id });
   } catch (error) {
@@ -82,6 +100,11 @@ router.post('/:id/resync', async (req, res) => {
     const podcast = await Podcast.findOne({ _id: episode.podcast, userId: req.user.id });
     if (!podcast) return res.status(404).json({ error: 'Podcast not found' });
 
+    // Check if sync is already running
+    if (!syncStatus.canStartSync()) {
+      return res.status(409).json({ error: 'Another sync operation is already in progress' });
+    }
+
     // Reset minimal fields to trigger fresh upload
     episode.status = 'pending';
     episode.downloaded = false;
@@ -89,7 +112,20 @@ router.post('/:id/resync', async (req, res) => {
     episode.cloudUrl = null;
     await episode.save();
 
-  downloadEpisode(episode, podcast, req.user.id).catch(err => logger.error('Re-sync failed:', err));
+    // Start sync tracking for single episode resync
+    syncStatus.startSync(0); // 0 podcasts to check
+    syncStatus.startDownloadPhase(1); // 1 episode
+    
+    downloadEpisode(episode, podcast, req.user.id)
+      .then(() => {
+        syncStatus.updateEpisode(episode.title, podcast.name, 'success');
+        syncStatus.endSync();
+      })
+      .catch(err => {
+        logger.error('Re-sync failed:', err);
+        syncStatus.updateEpisode(episode.title, podcast.name, 'failed', err.message);
+        syncStatus.endSync();
+      });
 
     res.json({ message: 'Re-sync started', episodeId: episode._id });
   } catch (error) {

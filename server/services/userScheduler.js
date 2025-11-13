@@ -121,6 +121,8 @@ async function shouldCheckUserPodcasts(userId, intervalHours) {
 
 /**
  * Process all podcasts for a specific user
+ * PHASE 1: Discovery - Check all RSS feeds and identify new episodes
+ * PHASE 2: Download - Download all new episodes
  */
 async function processUserPodcasts(userId, userEmail) {
   // Mark user as being processed
@@ -146,20 +148,23 @@ async function processUserPodcasts(userId, userEmail) {
     
     logger.info(`Checking ${podcasts.length} podcasts for ${userEmail} (max ${maxEpisodes} episodes each)`);
     
-    // Start sync status tracking so the UI can show progress
+    // Start sync status tracking - DISCOVERY PHASE
     syncStatus.startSync(podcasts.length);
     
-    let totalNewEpisodes = 0;
+    // ============================================
+    // PHASE 1: DISCOVERY - Check RSS & Create Episodes
+    // ============================================
+    const newEpisodesToDownload = [];
     
     for (const podcast of podcasts) {
       try {
-        logger.info(`[${userEmail}] Checking: ${podcast.name}`);
+        logger.info(`[${userEmail}] Checking RSS: ${podcast.name}`);
         
         // Get latest episodes from RSS feed
         const episodes = await getLatestEpisodes(podcast.rssUrl, maxEpisodes);
         let newCount = 0;
         
-        // Add new episodes to database
+        // Add new episodes to database (but don't download yet)
         for (const episodeData of episodes) {
           const exists = await Episode.findOne({ 
             guid: episodeData.guid,
@@ -170,17 +175,17 @@ async function processUserPodcasts(userId, userEmail) {
             const episode = await Episode.create({
               userId,
               ...episodeData,
-              podcast: podcast._id
+              podcast: podcast._id,
+              status: 'pending', // Mark as pending for download
+              downloaded: false
             });
             newCount++;
-            totalNewEpisodes++;
             
-            // Auto-download new episodes
-            try {
-              await downloadEpisode(episode, podcast, userId);
-            } catch (downloadError) {
-              logger.error(`[${userEmail}] Failed to download ${episode.title}:`, downloadError);
-            }
+            // Add to download queue
+            newEpisodesToDownload.push({
+              episode,
+              podcast
+            });
           }
         }
         
@@ -198,11 +203,6 @@ async function processUserPodcasts(userId, userEmail) {
           })
         });
         
-        // Cleanup old episodes if configured
-        if (podcast.keepEpisodeCount > 0) {
-          await cleanupOldEpisodes(podcast, podcast.keepEpisodeCount);
-        }
-        
         // Update sync status for this podcast
         syncStatus.updatePodcast(podcast.name, 'success', newCount);
         
@@ -211,13 +211,48 @@ async function processUserPodcasts(userId, userEmail) {
         }
         
       } catch (error) {
-        logger.error(`[${userEmail}] Error processing ${podcast.name}:`, error);
+        logger.error(`[${userEmail}] Error checking ${podcast.name}:`, error);
         // Update sync status with error
         syncStatus.updatePodcast(podcast.name, 'failed', 0, error.message);
       }
     }
     
-    logger.info(`[${userEmail}] Podcast check completed. Total new episodes: ${totalNewEpisodes}`);
+    logger.info(`[${userEmail}] Discovery phase completed. Found ${newEpisodesToDownload.length} new episodes to download`);
+    
+    // ============================================
+    // PHASE 2: DOWNLOAD - Download all new episodes
+    // ============================================
+    if (newEpisodesToDownload.length > 0) {
+      syncStatus.startDownloadPhase(newEpisodesToDownload.length);
+      
+      for (const { episode, podcast } of newEpisodesToDownload) {
+        try {
+          logger.info(`[${userEmail}] Downloading: ${episode.title} (${podcast.name})`);
+          await downloadEpisode(episode, podcast, userId);
+          
+          // Update sync status for this episode
+          syncStatus.updateEpisode(episode.title, podcast.name, 'success');
+          
+        } catch (downloadError) {
+          logger.error(`[${userEmail}] Failed to download ${episode.title}:`, downloadError);
+          // Update sync status with error
+          syncStatus.updateEpisode(episode.title, podcast.name, 'failed', downloadError.message);
+        }
+      }
+      
+      // Cleanup old episodes for each podcast if configured
+      for (const podcast of podcasts) {
+        if (podcast.keepEpisodeCount > 0) {
+          try {
+            await cleanupOldEpisodes(podcast, podcast.keepEpisodeCount);
+          } catch (cleanupError) {
+            logger.error(`[${userEmail}] Error cleaning up old episodes for ${podcast.name}:`, cleanupError);
+          }
+        }
+      }
+    }
+    
+    logger.info(`[${userEmail}] Podcast sync completed. Downloaded ${newEpisodesToDownload.length} episodes`);
     
   } catch (error) {
     logger.error(`Error processing podcasts for ${userEmail}:`, error);

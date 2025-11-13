@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, RefreshCw, Trash2, Power, PowerOff } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Power, PowerOff, Edit } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getPodcasts, createPodcast, deletePodcast, updatePodcast, refreshPodcast } from '../services/api';
 import { useToast } from '../hooks/useToast';
@@ -11,6 +11,7 @@ function Podcasts() {
   const [podcasts, setPodcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingPodcast, setEditingPodcast] = useState(null);
   const [newPodcast, setNewPodcast] = useState({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
   
   useEffect(() => {
@@ -31,14 +32,38 @@ function Podcasts() {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await createPodcast(newPodcast);
+      if (editingPodcast) {
+        await updatePodcast(editingPodcast._id, newPodcast);
+        toast.success(t('podcasts.messages.updateSuccess'));
+      } else {
+        await createPodcast(newPodcast);
+        toast.success(t('podcasts.messages.createSuccess'));
+      }
       setShowModal(false);
+      setEditingPodcast(null);
       setNewPodcast({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
-      toast.success(t('podcasts.messages.createSuccess'));
       fetchPodcasts();
     } catch (error) {
-      toast.error(t('podcasts.messages.createFailed') + ': ' + (error.response?.data?.error || error.message));
+      const errorMsg = editingPodcast ? t('podcasts.messages.updateFailed') : t('podcasts.messages.createFailed');
+      toast.error(errorMsg + ': ' + (error.response?.data?.error || error.message));
     }
+  };
+
+  const handleEdit = (podcast) => {
+    setEditingPodcast(podcast);
+    setNewPodcast({
+      name: podcast.name,
+      rssUrl: podcast.rssUrl,
+      driveFolderName: podcast.driveFolderName,
+      keepEpisodeCount: podcast.keepEpisodeCount
+    });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingPodcast(null);
+    setNewPodcast({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
   };
   
   const handleDelete = async (id, name) => {
@@ -109,13 +134,13 @@ function Podcasts() {
             <p className="text-sm text-gray-700 mb-4 line-clamp-2">{podcast.description}</p>
             
             <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-              <div>
+              <div className="flex items-center gap-2">
                 <span className="text-gray-600">{t('podcasts.fields.episodes')}:</span>
-                <span className="font-semibold ml-2">{podcast.totalEpisodes || 0}</span>
+                <span className="font-semibold">{podcast.totalEpisodes || 0}</span>
               </div>
-              <div>
+              <div className="flex items-center gap-2">
                 <span className="text-gray-600">{t('podcasts.fields.downloaded')}:</span>
-                <span className="font-semibold ml-2">{podcast.downloadedEpisodes || 0}</span>
+                <span className="font-semibold">{podcast.downloadedEpisodes || 0}</span>
               </div>
             </div>
             
@@ -126,6 +151,13 @@ function Podcasts() {
               >
                 <RefreshCw className="w-4 h-4" />
                 {t('podcasts.actions.refresh')}
+              </button>
+              <button
+                onClick={() => handleEdit(podcast)}
+                className="btn btn-secondary flex items-center justify-center"
+                title={t('common.edit')}
+              >
+                <Edit className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleToggleEnabled(podcast)}
@@ -151,11 +183,13 @@ function Podcasts() {
         </div>
       )}
       
-      {/* Add Podcast Modal */}
+      {/* Add/Edit Podcast Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4">{t('podcasts.addNewTitle')}</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              {editingPodcast ? t('podcasts.editTitle') : t('podcasts.addNewTitle')}
+            </h2>
             <form onSubmit={handleCreate}>
               <div className="space-y-4">
                 <div>
@@ -188,7 +222,13 @@ function Podcasts() {
                     onChange={(e) => setNewPodcast({ ...newPodcast, rssUrl: e.target.value })}
                     className="input"
                     placeholder={t('podcasts.placeholders.rssUrl')}
+                    disabled={editingPodcast !== null}
                   />
+                  {editingPodcast && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('podcasts.help.rssUrlNoEdit')}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">{t('podcasts.fields.driveFolderName')}</label>
@@ -223,8 +263,12 @@ function Podcasts() {
               </div>
               
               <div className="flex gap-3 mt-6">
-                <button type="submit" className="btn btn-primary flex-1">{t('podcasts.actions.create')}</button>
-                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary flex-1">{t('common.cancel')}</button>
+                <button type="submit" className="btn btn-primary flex-1">
+                  {editingPodcast ? t('common.save') : t('podcasts.actions.create')}
+                </button>
+                <button type="button" onClick={handleCloseModal} className="btn btn-secondary flex-1">
+                  {t('common.cancel')}
+                </button>
               </div>
             </form>
           </div>

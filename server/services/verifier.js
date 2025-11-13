@@ -2,6 +2,8 @@ import Podcast from '../models/Podcast.js';
 import Episode from '../models/Episode.js';
 import DriveCredentials from '../models/DriveCredentials.js';
 import { getDriveClient, listFilesInFolder, getOrCreatePodcastFolder } from './cloudStorage.js';
+import syncStatus from './syncStatus.js';
+import { logger } from '../utils/logger.js';
 
 export async function verifyDriveConsistency(userId) {
   const drive = getDriveClient();
@@ -85,34 +87,66 @@ export async function verifyDriveConsistency(userId) {
 
 export async function resyncEpisodesByIds(episodeIds) {
   const episodes = await Episode.find({ _id: { $in: episodeIds } });
+  if (episodes.length === 0) {
+    return { startedCount: 0, episodeIds: [] };
+  }
+  
+  // Check if sync is already running
+  if (!syncStatus.canStartSync()) {
+    throw new Error('Another sync operation is already in progress');
+  }
+  
+  // Group episodes by podcast
   const grouped = new Map();
   episodes.forEach(ep => {
     const key = String(ep.podcast);
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(ep);
   });
+  
   const PodcastModel = (await import('../models/Podcast.js')).default;
   const { downloadEpisode } = await import('./downloader.js');
 
+  // Start sync tracking for retry operation
+  // We skip discovery phase and go straight to download
+  syncStatus.startSync(0); // 0 podcasts to check
+  syncStatus.startDownloadPhase(episodes.length);
+  
+  logger.info(`Starting retry/resync for ${episodes.length} episodes`);
+
   const started = [];
-  for (const [podcastId, eps] of grouped) {
-    const podcast = await PodcastModel.findById(podcastId);
-    for (const ep of eps) {
-      // mark pending and clear old cloud fields to force re-upload
-      ep.status = 'pending';
-      ep.downloaded = false;
-      ep.cloudFileId = null;
-      ep.cloudUrl = null;
-      await ep.save();
-      // Pass userId to downloader to ensure download history is recorded correctly
-      try {
-        const userId = ep.userId || null;
-        downloadEpisode(ep, podcast, userId).catch(() => {});
-      } catch (err) {
-        // swallow - we intentionally fire-and-forget downloads
+  try {
+    for (const [podcastId, eps] of grouped) {
+      const podcast = await PodcastModel.findById(podcastId);
+      if (!podcast) {
+        logger.warn(`Podcast ${podcastId} not found, skipping episodes`);
+        continue;
       }
-      started.push(String(ep._id));
+      
+      for (const ep of eps) {
+        // mark pending and clear old cloud fields to force re-upload
+        ep.status = 'pending';
+        ep.downloaded = false;
+        ep.cloudFileId = null;
+        ep.cloudUrl = null;
+        await ep.save();
+        
+        // Download and track progress
+        try {
+          const userId = ep.userId || null;
+          await downloadEpisode(ep, podcast, userId);
+          syncStatus.updateEpisode(ep.title, podcast.name, 'success');
+          started.push(String(ep._id));
+        } catch (err) {
+          logger.error(`Failed to resync episode ${ep.title}:`, err);
+          syncStatus.updateEpisode(ep.title, podcast.name, 'failed', err.message);
+        }
+      }
     }
+  } finally {
+    syncStatus.endSync();
   }
+  
+  logger.info(`Retry/resync completed: ${started.length} succeeded, ${episodes.length - started.length} failed`);
   return { startedCount: started.length, episodeIds: started };
 }

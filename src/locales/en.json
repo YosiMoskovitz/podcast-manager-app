@@ -62,6 +62,39 @@
       "alreadyRunning": "Sync is already in progress",
       "failed": "Failed to start manual check"
     },
+    "syncModal": {
+      "titleRunning": "Syncing Podcasts",
+      "titleComplete": "Sync Complete",
+      "processing": "Processing",
+      "processed": "Processed",
+      "checking": "Checking",
+      "checked": "Checked",
+      "downloading": "Downloading",
+      "downloaded": "Downloaded",
+      "ofPodcasts": "of {{total}} podcasts",
+      "ofEpisodes": "of {{total}} episodes",
+      "progress": "Progress",
+      "currentProcessing": "Processing: {{name}}",
+      "checkingPodcast": "Checking RSS: {{name}}",
+      "downloadingEpisode": "Downloading episode...",
+      "newEpisodesFound": "New Episodes",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "remaining": "Remaining",
+      "newEpisode": "{{count}} new episode",
+      "newEpisode_plural": "{{count}} new episodes",
+      "retryFailed": "Retry Failed ({{count}})",
+      "retryFailedTitle": "Retry Failed Episodes",
+      "selectAll": "Select All",
+      "clear": "Clear",
+      "close": "Close",
+      "loadingFailed": "Loading failed episodes...",
+      "noFailedFound": "No failed episodes found.",
+      "cancel": "Cancel",
+      "retrySelectedCount": "Retry Selected ({{count}})",
+      "starting": "Starting...",
+      "retryTooltip": "Retry failed episode downloads"
+    },
     "drive": {
       "connected": "Connected",
       "notConnected": "Not Connected",
@@ -95,6 +128,7 @@
     "title": "Podcasts",
     "addNew": "Add Podcast",
     "addNewTitle": "Add New Podcast",
+    "editTitle": "Edit Podcast",
     "noPodcasts": "No podcasts yet",
     "noPodcastsDescription": "Click \"Add Podcast\" to get started",
     "noImage": "No Image",
@@ -124,6 +158,8 @@
     "messages": {
       "createSuccess": "Podcast created successfully",
       "createFailed": "Failed to create podcast",
+      "updateSuccess": "Podcast updated successfully",
+      "updateFailed": "Failed to update podcast",
       "deleteConfirm": "Delete podcast \"{{name}}\"? This will also delete all episodes.",
       "deleteSuccess": "Deleted podcast \"{{name}}\"",
       "deleteFailed": "Failed to delete podcast",
@@ -140,7 +176,8 @@
     "help": {
       "driveFolderName": "This is the folder name that will be created in your Google Drive. Defaults to podcast name.",
       "keepEpisodeCount": "Number of recent episodes to keep in cloud storage",
-      "keepEpisodeCountTip": "💡 Tip: Set to <strong>0</strong> to keep all episodes (unlimited)"
+      "keepEpisodeCountTip": "💡 Tip: Set to <strong>0</strong> to keep all episodes (unlimited)",
+      "rssUrlNoEdit": "RSS URL cannot be changed after creation"
     }
   },
   "episodes": {
