@@ -5,7 +5,6 @@
  */
 
 import { PassThrough } from 'stream';
-import id3 from 'id3js';
 import { logger } from '../utils/logger.js';
 
 /**
