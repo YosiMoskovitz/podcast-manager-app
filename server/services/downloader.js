@@ -5,6 +5,8 @@ import Podcast from '../models/Podcast.js';
 import DownloadHistory from '../models/DownloadHistory.js';
 import { uploadStreamToDrive } from './cloudStorage.js';
 import userKeyManager from './userKeyManager.js';
+import { sanitizeFullFilename } from '../utils/sanitizeFilename.js';
+import { addID3Metadata } from './metadataService.js';
 
 // Helper function to retry download on network errors
 async function downloadWithRetry(url, maxRetries = 3) {
@@ -48,6 +50,9 @@ export async function downloadEpisode(episode, podcast, userId) {
     
     // Decrypt episode to get audio URL and title
     episode.decrypt(userKey);
+    
+    // Decrypt podcast to get name and author for metadata tagging
+    podcast.decrypt(userKey);
     
     logger.info(`Starting download: ${episode.title}`);
     
@@ -105,11 +110,29 @@ export async function downloadEpisode(episode, podcast, userId) {
     const seqNumber = (typeof episode.sequenceNumber === 'number' && !isNaN(episode.sequenceNumber)) ? episode.sequenceNumber : (podcast.episodeCounter || 0);
     const paddedNumber = String(seqNumber).padStart(3, '0');
     // Do not truncate the title: preserve the full cleaned title (user requested no truncation)
-    const filename = `${paddedNumber}-${cleanedTitle}.mp3`;
+    // Sanitize filename for Android/FAT32 compatibility (replace restricted chars with hyphens)
+    const unsanitizedFilename = `${paddedNumber}-${cleanedTitle}.mp3`;
+    const filename = sanitizeFullFilename(unsanitizedFilename);
+    
+    // Add ID3 metadata tags (album=podcast name, song=episode title) for proper display on Android/music players
+    let audioStream = response.data;
+    try {
+      const metadataTagged = await addID3Metadata(audioStream, {
+        title: cleanedTitle,
+        album: podcast.name,
+        artist: podcast.author || podcast.name,
+        trackNumber: seqNumber,
+        genre: 'Podcast'
+      });
+      audioStream = metadataTagged;
+    } catch (metadataError) {
+      logger.warn(`Failed to add ID3 metadata to ${filename}, uploading without metadata:`, metadataError);
+      // Continue with untagged stream on error
+    }
     
     // Upload stream directly to Google Drive (no local storage)
     // IMPORTANT: forward userId so cloudStorage can load the correct Drive config
-    const uploadResult = await uploadStreamToDrive(response.data, filename, podcast, userId);
+    const uploadResult = await uploadStreamToDrive(audioStream, filename, podcast, userId);
     
     const endTime = new Date();
     const duration = (endTime - startTime) / 1000;
@@ -126,7 +149,7 @@ export async function downloadEpisode(episode, podcast, userId) {
     
     // Create a temporary episode object for encrypting originalFileName
     const tempEpisode = new Episode(episodeUpdates);
-    tempEpisode.originalFileName = `${cleanedTitle}.mp3`;
+    tempEpisode.originalFileName = sanitizeFullFilename(`${cleanedTitle}.mp3`);
     tempEpisode.encrypt(userKey);
     
     // Update episode with encrypted data
