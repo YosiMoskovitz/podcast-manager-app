@@ -154,6 +154,11 @@ router.post('/:id/refresh', async (req, res) => {
     // Decrypt to get RSS URL
     decryptDocument(podcast, req.userKey);
     
+    // Validate RSS URL exists
+    if (!podcast.rssUrl) {
+      return res.status(400).json({ error: 'Podcast has no RSS URL configured' });
+    }
+    
     const episodes = await getLatestEpisodes(podcast.rssUrl, 10);
     let newCount = 0;
     

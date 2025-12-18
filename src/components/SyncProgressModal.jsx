@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import { getEpisodes } from '../services/api';
 import { useTranslation } from 'react-i18next';
 
-function SyncProgressModal({ syncStatus, onClose, onBulkRetryRequest }) {
+function SyncProgressModal({ syncStatus, onClose, onBulkRetryRequest, isOpen }) {
   const { t } = useTranslation();
-  // Show modal if sync is running OR if there's recent progress data
-  if (!syncStatus || (!syncStatus.isRunning && !syncStatus.progress?.podcasts?.length)) return null;
+  // Only show modal when explicitly opened
+  if (!isOpen || !syncStatus) return null;
 
   const { progress, currentPodcast, currentEpisode, startTime, phase } = syncStatus;
   

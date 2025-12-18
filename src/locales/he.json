@@ -60,7 +60,9 @@
       "inProgress": "סנכרון בתהליך",
       "started": "בדיקה ידנית החלה!",
       "alreadyRunning": "סנכרון כבר רץ",
-      "failed": "נכשל להתחיל בדיקה ידנית"
+      "failed": "נכשל להתחיל בדיקה ידנית",
+      "noActiveSync": "אין סנכרון פעיל",
+      "episodesSynced": "פרקים מסונכרנים"
     },
     "syncModal": {
       "titleRunning": "מסנכרן פודקאסטים",
@@ -359,6 +361,44 @@
         "needs_authorization": "דרוש אימות",
         "active": "פעיל",
         "error": "שגיאה"
+      },
+      "browser": {
+        "title": "בחר תיקיית Google Drive",
+        "subtitle": "בחר תיקיית יעד לפודקאסטים שלך",
+        "myDrive": "הכונן שלי",
+        "loadFoldersFailed": "נכשל לטעון תיקיות",
+        "connectFailed": "נכשל להתחבר לשרת",
+        "createFolderFailed": "נכשל ליצור תיקייה: {{error}}",
+        "current": "נוכחי",
+        "createSubfolderTitle": "צור תת-תיקייה כאן",
+        "createNewFolder": "צור תיקייה חדשה",
+        "folderNamePlaceholder": "שם תיקייה",
+        "create": "צור",
+        "cancel": "ביטול",
+        "selected": "נבחר:",
+        "id": "מזהה:",
+        "selectFolder": "בחר תיקייה",
+        "loadSubfoldersFailed": "נכשל לטעון תת-תיקיות",
+        "loadSubfoldersError": "נכשל לטעון תת-תיקיות"
+      },
+      "api": {
+        "noFileUploaded": "לא הועלה קובץ",
+        "invalidCredentialsFormat": "פורמט קובץ אישורים לא תקין",
+        "invalidTokenFormat": "פורמט קובץ אסימון לא תקין",
+        "uploadCredentialsFirst": "אנא העלה אישורים תחילה",
+        "uploadCredentialsFailed": "נכשל להעלות אישורים: {{error}}",
+        "uploadTokenFailed": "נכשל להעלות אסימון: {{error}}",
+        "oauthNotConfigured": "Google OAuth לא מוגדר. אנא צור קשר עם המנהל.",
+        "generateAuthUrlFailed": "נכשל ליצור כתובת הרשאה",
+        "noAuthCode": "לא סופק קוד הרשאה",
+        "fetchConfigFailed": "נכשל לקבל תצורה",
+        "createFolderFailed": "נכשל ליצור תיקייה: {{error}}",
+        "foldersFetchFailed": "נכשל לקבל תיקיות",
+        "folderNotFound": "תיקייה לא נמצאה",
+        "setFolderFailed": "נכשל להגדיר תיקייה: {{error}}",
+        "toggleFailed": "נכשל להחליף מצב Drive: {{error}}",
+        "testConnectionFailed": "נכשל לבדוק חיבור: {{error}}",
+        "resetFailed": "נכשל לאפס תצורה: {{error}}"
       }
     },
     "data": {

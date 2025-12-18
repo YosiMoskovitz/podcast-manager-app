@@ -10,6 +10,7 @@ import { cleanupOldEpisodes } from './cloudStorage.js';
 import { logger } from '../utils/logger.js';
 import { initializeDrive } from './cloudStorage.js';
 import syncStatus from './syncStatus.js';
+import userKeyManager from './userKeyManager.js';
 
 // Track which users are currently being processed to avoid overlap
 const processingUsers = new Set();
@@ -131,6 +132,9 @@ async function processUserPodcasts(userId, userEmail) {
   try {
     logger.info(`Starting podcast check for user: ${userEmail}`);
     
+    // Load user's encryption key
+    const userKey = await userKeyManager.getUserKey(userId);
+    
     // Initialize Drive for this user if they have it configured
     await initializeDrive(userId);
     
@@ -158,6 +162,15 @@ async function processUserPodcasts(userId, userEmail) {
     
     for (const podcast of podcasts) {
       try {
+        // Decrypt podcast to get RSS URL and name
+        podcast.decrypt(userKey);
+        
+        // Skip podcasts without RSS URL
+        if (!podcast.rssUrl) {
+          logger.warn(`[${userEmail}] Skipping podcast ${podcast.name}: No RSS URL configured`);
+          continue;
+        }
+        
         logger.info(`[${userEmail}] Checking RSS: ${podcast.name}`);
         
         // Get latest episodes from RSS feed
@@ -172,13 +185,29 @@ async function processUserPodcasts(userId, userEmail) {
           });
           
           if (!exists) {
-            const episode = await Episode.create({
+            // Create new episode and encrypt it
+            const episode = new Episode({
               userId,
-              ...episodeData,
               podcast: podcast._id,
-              status: 'pending', // Mark as pending for download
+              guid: episodeData.guid,
+              pubDate: episodeData.pubDate,
+              duration: episodeData.duration,
+              status: 'pending',
               downloaded: false
             });
+            
+            // Set virtual fields (unencrypted data)
+            episode.title = episodeData.title;
+            episode.description = episodeData.description;
+            episode.audioUrl = episodeData.audioUrl;
+            episode.originalFileName = episodeData.originalFileName;
+            
+            // Encrypt the fields before saving
+            episode.encrypt(userKey);
+            
+            // Save the episode
+            await episode.save();
+            
             newCount++;
             
             // Add to download queue
@@ -241,7 +270,8 @@ async function processUserPodcasts(userId, userEmail) {
         if (eps.length === 0) continue;
         try {
           const { start } = await Podcast.reserveSequenceBlock(podcast._id, eps.length);
-          eps.sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0));
+          // Sort by pubDate ascending (oldest first) so oldest gets lowest number, newest gets highest
+          eps.sort((a, b) => (a.pubDate || 0) - (b.pubDate || 0));
           const ops = [];
           for (let i = 0; i < eps.length; i++) {
             const seq = start + i;

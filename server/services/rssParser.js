@@ -14,6 +14,11 @@ const parser = new Parser({
 });
 
 export async function parseFeed(feedUrl, retries = 2) {
+  // Validate feedUrl
+  if (!feedUrl) {
+    throw new Error('RSS feed URL is required');
+  }
+  
   let lastError;
   
   for (let attempt = 1; attempt <= retries + 1; attempt++) {
@@ -61,6 +66,11 @@ export async function parseFeed(feedUrl, retries = 2) {
 }
 
 export async function getLatestEpisodes(feedUrl, limit = 5) {
+  // Validate feedUrl
+  if (!feedUrl) {
+    throw new Error('RSS feed URL is required');
+  }
+  
   try {
     const feedData = await parseFeed(feedUrl);
     return feedData.episodes.slice(0, limit);

@@ -17,6 +17,11 @@ const userSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  // Encrypted email for display purposes
+  encryptedEmail: {
+    type: String,
+    required: false // Not required to support migration of existing users
+  },
   // Encrypted display name
   encryptedName: {
     type: String,
@@ -41,6 +46,13 @@ userSchema.virtual('name').get(function() {
   this._decryptedName = value;
 });
 
+// Virtual field for decrypted email (not stored in DB)
+userSchema.virtual('email').get(function() {
+  return this._decryptedEmail || '[Encrypted]';
+}).set(function(value) {
+  this._decryptedEmail = value;
+});
+
 // Virtual field for decrypted picture (not stored in DB)
 userSchema.virtual('picture').get(function() {
   return this._decryptedPicture;
@@ -57,6 +69,9 @@ userSchema.set('toObject', { virtuals: true });
  * @param {Buffer} userKey - User's decrypted encryption key
  */
 userSchema.methods.decrypt = function(userKey) {
+  if (this.encryptedEmail) {
+    this._decryptedEmail = encryptionService.decrypt(this.encryptedEmail, userKey);
+  }
   if (this.encryptedName) {
     this._decryptedName = encryptionService.decrypt(this.encryptedName, userKey);
   }
@@ -71,6 +86,9 @@ userSchema.methods.decrypt = function(userKey) {
  * @param {Buffer} userKey - User's decrypted encryption key
  */
 userSchema.methods.encrypt = function(userKey) {
+  if (this._decryptedEmail) {
+    this.encryptedEmail = encryptionService.encrypt(this._decryptedEmail, userKey);
+  }
   if (this._decryptedName) {
     this.encryptedName = encryptionService.encrypt(this._decryptedName, userKey);
   }

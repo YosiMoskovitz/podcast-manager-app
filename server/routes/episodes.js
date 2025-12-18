@@ -4,8 +4,12 @@ import Podcast from '../models/Podcast.js';
 import { downloadEpisode } from '../services/downloader.js';
 import { logger } from '../utils/logger.js';
 import syncStatus from '../services/syncStatus.js';
+import { loadUserKey, decryptDocuments, decryptDocument } from '../middleware/encryption.js';
 
 const router = express.Router();
+
+// Apply encryption middleware to all routes
+router.use(loadUserKey);
 
 // Get all episodes with filters
 router.get('/', async (req, res) => {
@@ -17,11 +21,19 @@ router.get('/', async (req, res) => {
     if (status) filter.status = status;
     
     const episodes = await Episode.find(filter)
-      .populate('podcast', 'name imageUrl')
+      .populate('podcast')
       .sort({ pubDate: -1 })
       .limit(parseInt(limit));
     
-    res.json(episodes);
+    // Decrypt episodes and their populated podcasts
+    const decryptedEpisodes = decryptDocuments(episodes, req.userKey);
+    decryptedEpisodes.forEach(episode => {
+      if (episode.podcast) {
+        decryptDocument(episode.podcast, req.userKey);
+      }
+    });
+    
+    res.json(decryptedEpisodes);
   } catch (error) {
     logger.error('Error fetching episodes:', error);
     res.status(500).json({ error: 'Failed to fetch episodes' });
@@ -35,6 +47,12 @@ router.get('/:id', async (req, res) => {
     
     if (!episode) {
       return res.status(404).json({ error: 'Episode not found' });
+    }
+    
+    // Decrypt episode and its populated podcast
+    decryptDocument(episode, req.userKey);
+    if (episode.podcast) {
+      decryptDocument(episode.podcast, req.userKey);
     }
     
     res.json(episode);
@@ -62,6 +80,9 @@ router.post('/:id/download', async (req, res) => {
     if (!podcast) {
       return res.status(404).json({ error: 'Podcast not found' });
     }
+    
+    // Decrypt podcast to access its fields
+    decryptDocument(podcast, req.userKey);
     
     // Check if sync is already running
     if (!syncStatus.canStartSync()) {
@@ -99,6 +120,9 @@ router.post('/:id/resync', async (req, res) => {
 
     const podcast = await Podcast.findOne({ _id: episode.podcast, userId: req.user.id });
     if (!podcast) return res.status(404).json({ error: 'Podcast not found' });
+
+    // Decrypt podcast to access its fields
+    decryptDocument(podcast, req.userKey);
 
     // Check if sync is already running
     if (!syncStatus.canStartSync()) {
@@ -157,9 +181,11 @@ router.delete('/clear-all/confirm', async (req, res) => {
     logger.info('Starting clear all episodes operation');
     
     // Import cloudStorage dynamically to avoid circular dependency
-    const { getDriveClient } = await import('../services/cloudStorage.js');
+    const { getDriveClient, initializeDrive } = await import('../services/cloudStorage.js');
     const DriveCredentials = (await import('../models/DriveCredentials.js')).default;
     
+    // Initialize drive client for this user
+    await initializeDrive(req.user.id);
     const drive = getDriveClient();
     const driveConfig = await DriveCredentials.getConfig(req.user.id);
     const mainFolderId = driveConfig?.folderId;

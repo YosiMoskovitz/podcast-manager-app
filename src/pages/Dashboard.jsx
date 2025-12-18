@@ -6,6 +6,7 @@ import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import SyncProgressModal from '../components/SyncProgressModal';
 import VerificationModal from '../components/VerificationModal';
+import SyncIndicator from '../components/SyncIndicator';
 
 function Dashboard() {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ function Dashboard() {
   const [retryingFailed, setRetryingFailed] = useState(false);
   const [failedEpisodes, setFailedEpisodes] = useState([]);
   const [selectedEpisodes, setSelectedEpisodes] = useState(new Set());
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const pollInterval = useRef(null);
   
   useEffect(() => {
@@ -94,6 +96,7 @@ function Dashboard() {
     try {
       await triggerManualCheck();
       toast.success(t('dashboard.sync.started'));
+      setShowSyncModal(true);
       // Optimistically show modal while backend starts
       setSyncStatus({ 
         isRunning: true, 
@@ -262,8 +265,9 @@ function Dashboard() {
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <SyncProgressModal 
         syncStatus={syncStatus} 
-        onClose={() => setSyncStatus(null)}
+        onClose={() => setShowSyncModal(false)}
         onBulkRetryRequest={handleBulkRetryRequest}
+        isOpen={showSyncModal}
       />
       <VerificationModal
         verificationResult={verificationResult}
@@ -368,7 +372,11 @@ function Dashboard() {
       )}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">{t('dashboard.title')}</h1>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          <SyncIndicator 
+            syncStatus={syncStatus} 
+            onClick={() => setShowSyncModal(true)} 
+          />
           {stats?.failedDownloads > 0 && (
             <button 
               onClick={openRetryDialog}

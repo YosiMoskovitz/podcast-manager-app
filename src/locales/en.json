@@ -60,7 +60,9 @@
       "inProgress": "Sync in progress",
       "started": "Manual check started!",
       "alreadyRunning": "Sync is already in progress",
-      "failed": "Failed to start manual check"
+      "failed": "Failed to start manual check",
+      "noActiveSync": "No active sync",
+      "episodesSynced": "Episodes synced"
     },
     "syncModal": {
       "titleRunning": "Syncing Podcasts",
@@ -359,6 +361,44 @@
         "needs_authorization": "Needs Authorization",
         "active": "Active",
         "error": "Error"
+      },
+      "browser": {
+        "title": "Select Google Drive Folder",
+        "subtitle": "Choose a destination folder for your podcasts",
+        "myDrive": "My Drive",
+        "loadFoldersFailed": "Failed to load folders",
+        "connectFailed": "Failed to connect to server",
+        "createFolderFailed": "Failed to create folder: {{error}}",
+        "current": "Current",
+        "createSubfolderTitle": "Create subfolder here",
+        "createNewFolder": "Create New Folder",
+        "folderNamePlaceholder": "Folder name",
+        "create": "Create",
+        "cancel": "Cancel",
+        "selected": "Selected:",
+        "id": "ID:",
+        "selectFolder": "Select Folder",
+        "loadSubfoldersFailed": "Failed to load subfolders",
+        "loadSubfoldersError": "Failed to load subfolders"
+      },
+      "api": {
+        "noFileUploaded": "No file uploaded",
+        "invalidCredentialsFormat": "Invalid credentials file format",
+        "invalidTokenFormat": "Invalid token file format",
+        "uploadCredentialsFirst": "Please upload credentials first",
+        "uploadCredentialsFailed": "Failed to upload credentials: {{error}}",
+        "uploadTokenFailed": "Failed to upload token: {{error}}",
+        "oauthNotConfigured": "Google OAuth not configured. Please contact the administrator.",
+        "generateAuthUrlFailed": "Failed to generate authorization URL",
+        "noAuthCode": "No authorization code provided",
+        "fetchConfigFailed": "Failed to fetch configuration",
+        "createFolderFailed": "Failed to create folder: {{error}}",
+        "foldersFetchFailed": "Failed to fetch folders",
+        "folderNotFound": "Folder not found",
+        "setFolderFailed": "Failed to set folder: {{error}}",
+        "toggleFailed": "Failed to toggle Drive: {{error}}",
+        "testConnectionFailed": "Failed to test connection: {{error}}",
+        "resetFailed": "Failed to reset configuration: {{error}}"
       }
     },
     "data": {

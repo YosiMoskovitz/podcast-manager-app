@@ -1,8 +1,12 @@
 import express from 'express';
 import SystemSettings from '../models/SystemSettings.js';
 import { logger } from '../utils/logger.js';
+import { loadUserKey } from '../middleware/encryption.js';
 
 const router = express.Router();
+
+// Apply encryption middleware to all routes
+router.use(loadUserKey);
 
 // Get system settings
 router.get('/', async (req, res) => {
