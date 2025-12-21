@@ -5,7 +5,50 @@
  */
 
 import { PassThrough } from 'stream';
+import axios from 'axios';
 import { logger } from '../utils/logger.js';
+
+/**
+ * Download podcast image from URL and convert to buffer
+ * Supports JPEG and PNG formats for album art
+ * 
+ * @param {string} imageUrl - URL of the podcast image
+ * @returns {Promise<Buffer|null>} Image buffer or null if download fails
+ */
+export async function downloadPodcastImage(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    return null;
+  }
+
+  try {
+    const response = await axios({
+      method: 'get',
+      url: imageUrl,
+      responseType: 'arraybuffer',
+      timeout: 10000, // 10 second timeout for image download
+      maxRedirects: 5,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    // Validate that we got an image (check content-type)
+    const contentType = response.headers['content-type'] || '';
+    if (!contentType.includes('image')) {
+      logger.warn(`Download podcast image: Invalid content-type received: ${contentType}`);
+      return null;
+    }
+
+    const buffer = Buffer.from(response.data);
+    logger.debug(`Downloaded podcast image: ${buffer.length} bytes from ${imageUrl.substring(0, 50)}...`);
+    return buffer;
+
+  } catch (error) {
+    logger.warn(`Failed to download podcast image from ${imageUrl}: ${error.message}`);
+    // Return null rather than throwing - missing image shouldn't break the download
+    return null;
+  }
+}
 
 /**
  * Add ID3 metadata tags to MP3 audio stream
@@ -121,6 +164,34 @@ function createID3v2TagBuffer(frames) {
       return Buffer.concat([header, Buffer.from([encoding]), textBuffer]);
     };
 
+    // Helper to create APIC frame (attached picture/album art)
+    const createAPICFrame = (apicData) => {
+      if (!apicData || !apicData.imageBuffer) return Buffer.alloc(0);
+      
+      const encoding = 0x03; // UTF-8
+      const mimeBuffer = Buffer.from(apicData.mime || 'image/jpeg', 'utf-8');
+      const descriptionBuffer = Buffer.from(apicData.description || 'Cover', 'utf-8');
+      const pictureType = apicData.type || 3; // 3 = Cover (front)
+      
+      // Build APIC frame: encoding + mime type (null-terminated) + picture type + description (null-terminated) + picture data
+      const content = Buffer.concat([
+        Buffer.from([encoding]),
+        mimeBuffer,
+        Buffer.from([0]), // null terminator for MIME
+        Buffer.from([pictureType]),
+        descriptionBuffer,
+        Buffer.from([0]), // null terminator for description
+        apicData.imageBuffer
+      ]);
+      
+      const header = Buffer.alloc(10);
+      header.write('APIC', 0, 4, 'ascii');
+      header.writeUInt32BE(content.length, 4);
+      header.writeUInt16BE(0, 8); // flags
+      
+      return Buffer.concat([header, content]);
+    };
+
     // Add text frames
     if (frames.TIT2) frameData = Buffer.concat([frameData, createTextFrame('TIT2', frames.TIT2)]);
     if (frames.TPE1) frameData = Buffer.concat([frameData, createTextFrame('TPE1', frames.TPE1)]);
@@ -128,6 +199,9 @@ function createID3v2TagBuffer(frames) {
     if (frames.TRCK) frameData = Buffer.concat([frameData, createTextFrame('TRCK', frames.TRCK)]);
     if (frames.TYER) frameData = Buffer.concat([frameData, createTextFrame('TYER', frames.TYER)]);
     if (frames.TCON) frameData = Buffer.concat([frameData, createTextFrame('TCON', frames.TCON)]);
+    
+    // Add album art if provided
+    if (frames.APIC) frameData = Buffer.concat([frameData, createAPICFrame(frames.APIC)]);
 
     // Create ID3v2.4 header
     // Spec: 'ID3' + version (0x04 0x00) + flags + size

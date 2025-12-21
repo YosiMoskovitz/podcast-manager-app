@@ -6,7 +6,7 @@ import DownloadHistory from '../models/DownloadHistory.js';
 import { uploadStreamToDrive } from './cloudStorage.js';
 import userKeyManager from './userKeyManager.js';
 import { sanitizeFullFilename } from '../utils/sanitizeFilename.js';
-import { addID3Metadata } from './metadataService.js';
+import { addID3Metadata, downloadPodcastImage } from './metadataService.js';
 
 // Helper function to retry download on network errors
 async function downloadWithRetry(url, maxRetries = 3) {
@@ -117,11 +117,18 @@ export async function downloadEpisode(episode, podcast, userId) {
     // Add ID3 metadata tags (album=podcast name, song=episode title) for proper display on Android/music players
     let audioStream = response.data;
     try {
+      // Download podcast image to attach as album art
+      let albumArtBuffer = null;
+      if (podcast.imageUrl) {
+        albumArtBuffer = await downloadPodcastImage(podcast.imageUrl);
+      }
+
       const metadataTagged = await addID3Metadata(audioStream, {
         title: cleanedTitle,
         album: podcast.name,
         artist: podcast.author || podcast.name,
         trackNumber: seqNumber,
+        albumArt: albumArtBuffer,
         genre: 'Podcast'
       });
       audioStream = metadataTagged;
