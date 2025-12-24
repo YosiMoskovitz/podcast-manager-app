@@ -117,14 +117,16 @@ export async function downloadEpisode(episode, podcast, userId) {
     // Add ID3 metadata tags (album=podcast name, song=episode title) for proper display on Android/music players
     let audioStream = response.data;
     try {
-      // Download podcast image to attach as album art
+      // Download episode or podcast image to attach as album art
+      // Prioritize episode-specific image if available, fallback to podcast image
       let albumArtBuffer = null;
-      if (podcast.imageUrl) {
-        albumArtBuffer = await downloadPodcastImage(podcast.imageUrl);
+      const imageUrl = episode.imageUrl || podcast.imageUrl;
+      if (imageUrl) {
+        albumArtBuffer = await downloadPodcastImage(imageUrl);
       }
 
       const metadataTagged = await addID3Metadata(audioStream, {
-        title: cleanedTitle,
+        title: `${paddedNumber}-${cleanedTitle}`,
         album: podcast.name,
         artist: podcast.author || podcast.name,
         trackNumber: seqNumber,

@@ -179,6 +179,7 @@ router.post('/:id/refresh', async (req, res) => {
         episode.title = episodeData.title;
         episode.description = episodeData.description;
         episode.audioUrl = episodeData.audioUrl;
+        episode.imageUrl = episodeData.imageUrl;
         
         // Encrypt and save
         encryptDocument(episode, req.userKey);

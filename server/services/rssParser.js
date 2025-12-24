@@ -40,7 +40,8 @@ export async function parseFeed(feedUrl, retries = 2) {
           audioUrl: item.enclosure?.url,
           duration: item.duration || item.itunes?.duration,
           fileSize: item.enclosure?.length ? parseInt(item.enclosure.length) : null,
-          link: item.link
+          link: item.link,
+          imageUrl: item.image?.href || item.image || item.itunes?.image
         }))
       };
     } catch (error) {

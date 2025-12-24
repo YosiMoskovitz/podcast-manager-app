@@ -21,6 +21,7 @@ const episodeSchema = new mongoose.Schema({
   encryptedDescription: String,
   encryptedAudioUrl: String,
   encryptedOriginalFileName: String,
+  encryptedImageUrl: String,
   // END ENCRYPTED FIELDS
   
   // GUID can stay unencrypted as it's a technical identifier from RSS
@@ -80,6 +81,12 @@ episodeSchema.virtual('originalFileName').get(function() {
   this._decryptedOriginalFileName = value;
 });
 
+episodeSchema.virtual('imageUrl').get(function() {
+  return this._decryptedImageUrl;
+}).set(function(value) {
+  this._decryptedImageUrl = value;
+});
+
 // Ensure virtuals are included in JSON
 episodeSchema.set('toJSON', { virtuals: true });
 episodeSchema.set('toObject', { virtuals: true });
@@ -93,6 +100,7 @@ episodeSchema.methods.decrypt = function(userKey) {
   this._decryptedDescription = encryptionService.decrypt(this.encryptedDescription, userKey);
   this._decryptedAudioUrl = encryptionService.decrypt(this.encryptedAudioUrl, userKey);
   this._decryptedOriginalFileName = encryptionService.decrypt(this.encryptedOriginalFileName, userKey);
+  this._decryptedImageUrl = encryptionService.decrypt(this.encryptedImageUrl, userKey);
   return this;
 };
 
@@ -112,6 +120,9 @@ episodeSchema.methods.encrypt = function(userKey) {
   }
   if (this._decryptedOriginalFileName !== undefined) {
     this.encryptedOriginalFileName = encryptionService.encrypt(this._decryptedOriginalFileName, userKey);
+  }
+  if (this._decryptedImageUrl !== undefined) {
+    this.encryptedImageUrl = encryptionService.encrypt(this._decryptedImageUrl, userKey);
   }
 };
 
