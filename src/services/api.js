@@ -18,6 +18,11 @@ export const createPodcast = (data) => api.post('/podcasts', data);
 export const updatePodcast = (id, data) => api.put(`/podcasts/${id}`, data);
 export const deletePodcast = (id) => api.delete(`/podcasts/${id}`);
 export const refreshPodcast = (id) => api.post(`/podcasts/${id}/refresh`);
+export const resetPodcastCounter = (id) => api.post(`/podcasts/${id}/reset-counter`);
+export const startOverPodcast = (id) => api.post(`/podcasts/${id}/start-over`);
+export const rebuildPodcastMetadata = (id) => api.post(`/podcasts/${id}/rebuild-metadata`);
+export const getPodcastRssItems = (id, params) => api.get(`/podcasts/${id}/rss-items`, { params });
+export const downloadRssEpisode = (id, guid) => api.post(`/podcasts/${id}/download-rss`, { guid });
 
 // Episodes
 export const getEpisodes = (params) => api.get('/episodes', { params });
@@ -25,6 +30,8 @@ export const getEpisode = (id) => api.get(`/episodes/${id}`);
 export const downloadEpisode = (id) => api.post(`/episodes/${id}/download`);
 export const deleteEpisode = (id) => api.delete(`/episodes/${id}`);
 export const clearAllEpisodes = () => api.delete('/episodes/clear-all/confirm');
+export const protectEpisode = (id, protectedValue) => api.post(`/episodes/${id}/protect`, { protected: protectedValue });
+export const removeEpisodeFromDrive = (id) => api.post(`/episodes/${id}/remove`);
 
 // Statistics
 export const getCurrentStats = () => api.get('/stats/current');

@@ -2,6 +2,7 @@ import express from 'express';
 import Episode from '../models/Episode.js';
 import Podcast from '../models/Podcast.js';
 import { downloadEpisode } from '../services/downloader.js';
+import { getDriveClient, initializeDrive, removeEpisodeFromDrive } from '../services/cloudStorage.js';
 import { logger } from '../utils/logger.js';
 import syncStatus from '../services/syncStatus.js';
 import { loadUserKey, decryptDocuments, decryptDocument } from '../middleware/encryption.js';
@@ -155,6 +156,53 @@ router.post('/:id/resync', async (req, res) => {
   } catch (error) {
     logger.error('Error re-syncing episode:', error);
     res.status(500).json({ error: 'Failed to re-sync episode' });
+  }
+});
+
+// Protect/unprotect episode from cleanup
+router.post('/:id/protect', async (req, res) => {
+  try {
+    const episode = await Episode.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!episode) return res.status(404).json({ error: 'Episode not found' });
+
+    const requestedValue = req.body?.protected;
+    const nextValue = typeof requestedValue === 'boolean' ? requestedValue : !episode.protectedFromCleanup;
+    episode.protectedFromCleanup = nextValue;
+    await episode.save();
+
+    res.json({
+      message: nextValue ? 'Episode protected from cleanup' : 'Episode unprotected from cleanup',
+      episodeId: episode._id,
+      protectedFromCleanup: episode.protectedFromCleanup
+    });
+  } catch (error) {
+    logger.error('Error updating episode protection:', error);
+    res.status(500).json({ error: 'Failed to update episode protection' });
+  }
+});
+
+// Remove episode from Drive but keep record
+router.post('/:id/remove', async (req, res) => {
+  try {
+    const episode = await Episode.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!episode) return res.status(404).json({ error: 'Episode not found' });
+
+    if (!episode.cloudFileId) {
+      return res.status(400).json({ error: 'Episode is not stored in Drive' });
+    }
+
+    await initializeDrive(req.user.id);
+    const drive = getDriveClient();
+    if (!drive) {
+      return res.status(400).json({ error: 'Google Drive is not configured' });
+    }
+
+    await removeEpisodeFromDrive(episode);
+
+    res.json({ message: 'Episode removed from Drive', episodeId: episode._id });
+  } catch (error) {
+    logger.error('Error removing episode from Drive:', error);
+    res.status(500).json({ error: 'Failed to remove episode from Drive' });
   }
 });
 

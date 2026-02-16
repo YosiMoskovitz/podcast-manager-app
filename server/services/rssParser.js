@@ -6,7 +6,9 @@ const parser = new Parser({
     item: [
       ['itunes:duration', 'duration'],
       ['itunes:explicit', 'explicit'],
-      ['itunes:image', 'image']
+      ['itunes:image', 'itunesImage'],
+      ['media:content', 'mediaContent', { keepArray: true }],
+      ['media:thumbnail', 'mediaThumbnail']
     ]
   },
   timeout: 30000, // 30 second timeout for RSS feed fetching
@@ -32,17 +34,49 @@ export async function parseFeed(feedUrl, retries = 2) {
         imageUrl: feed.image?.url || feed.itunes?.image,
         author: feed.itunes?.author || feed.author,
         link: feed.link,
-        episodes: feed.items.map(item => ({
-          title: item.title,
-          description: item.contentSnippet || item.description,
-          guid: item.guid || item.link,
-          pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
-          audioUrl: item.enclosure?.url,
-          duration: item.duration || item.itunes?.duration,
-          fileSize: item.enclosure?.length ? parseInt(item.enclosure.length) : null,
-          link: item.link,
-          imageUrl: item.image?.href || item.image || item.itunes?.image
-        }))
+        episodes: feed.items.map(item => {
+          // Try multiple sources for episode image
+          let episodeImageUrl = null;
+          
+          // 1. Try itunes:image attribute with href
+          if (item.itunesImage?.$ && item.itunesImage.$.href) {
+            episodeImageUrl = item.itunesImage.$.href;
+          }
+          // 2. Try itunes:image as direct value
+          else if (typeof item.itunesImage === 'string') {
+            episodeImageUrl = item.itunesImage;
+          }
+          // 3. Try media:content or media:thumbnail
+          else if (item.mediaContent && item.mediaContent.length > 0) {
+            const imageMedia = item.mediaContent.find(m => m.$ && m.$.medium === 'image');
+            if (imageMedia?.$.url) {
+              episodeImageUrl = imageMedia.$.url;
+            }
+          }
+          else if (item.mediaThumbnail?.$.url) {
+            episodeImageUrl = item.mediaThumbnail.$.url;
+          }
+          // 4. Try enclosure with image type
+          else if (item.enclosure?.type?.startsWith('image/')) {
+            episodeImageUrl = item.enclosure.url;
+          }
+          // 5. Fallback to itunes object
+          else if (item.itunes?.image) {
+            episodeImageUrl = item.itunes.image;
+          }
+          
+          return {
+            title: item.title,
+            description: item.contentSnippet || item.description,
+            guid: item.guid || item.link,
+            pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
+            audioUrl: item.enclosure?.url,
+            duration: item.duration || item.itunes?.duration,
+            fileSize: item.enclosure?.length ? parseInt(item.enclosure.length) : null,
+            link: item.link,
+            imageUrl: episodeImageUrl
+          };
+        })
       };
     } catch (error) {
       lastError = error;

@@ -153,7 +153,9 @@ export async function downloadEpisode(episode, podcast, userId) {
       downloadDate: endTime,
       cloudFileId: uploadResult.fileId,
       cloudUrl: uploadResult.webViewLink,
-      fileSize: uploadResult.size
+      fileSize: uploadResult.size,
+      removedFromSystem: false,
+      removedFromSystemAt: null
     };
     
     // Create a temporary episode object for encrypting originalFileName

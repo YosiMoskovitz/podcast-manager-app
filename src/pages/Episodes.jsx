@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Download, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { Download, CheckCircle, XCircle, Clock, RefreshCw, Shield, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getEpisodes, downloadEpisode, resyncEpisode } from '../services/api';
+import { getEpisodes, downloadEpisode, removeEpisodeFromDrive, resyncEpisode } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 
@@ -47,6 +47,17 @@ function Episodes() {
       toast.error(t('episodes.messages.resyncFailed') + ': ' + (error.response?.data?.error || error.message));
     }
   };
+
+  const handleRemove = async (id, title) => {
+    if (!window.confirm(t('episodes.confirm.removeFromDrive', { title }))) return;
+    try {
+      await removeEpisodeFromDrive(id);
+      toast.success(t('episodes.messages.removed', { title }));
+      setTimeout(fetchEpisodes, 1000);
+    } catch (error) {
+      toast.error(t('episodes.messages.removeFailed') + ': ' + (error.response?.data?.error || error.message));
+    }
+  };
   
   const getStatusBadge = (status) => {
     const badges = {
@@ -66,6 +77,19 @@ function Episodes() {
       </span>
     );
   };
+
+  const getRemovedBadge = () => (
+    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+      {t('episodes.status.removed')}
+    </span>
+  );
+
+  const getProtectedBadge = () => (
+    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">
+      <Shield className="w-4 h-4" />
+      {t('episodes.status.protected')}
+    </span>
+  );
   
   const formatDate = (dateString) => {
     if (!dateString) return t('episodes.unknown');
@@ -128,6 +152,8 @@ function Episodes() {
                   </div>
                   
                   <div className="flex items-center gap-3">
+                    {episode.removedFromSystem && getRemovedBadge()}
+                    {episode.protectedFromCleanup && getProtectedBadge()}
                     {getStatusBadge(episode.status)}
                     {episode.status === 'pending' && (
                       <button
@@ -146,6 +172,17 @@ function Episodes() {
                       >
                         <RefreshCw className="w-4 h-4" />
                         {t('episodes.actions.resync')}
+                      </button>
+                    )}
+
+                    {episode.cloudFileId && (
+                      <button
+                        onClick={() => handleRemove(episode._id, episode.title)}
+                        className="btn btn-danger flex items-center gap-2"
+                        title={t('episodes.titles.removeFromDrive')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {t('episodes.actions.removeFromDrive')}
                       </button>
                     )}
 

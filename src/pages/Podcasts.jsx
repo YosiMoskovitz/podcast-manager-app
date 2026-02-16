@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Plus, RefreshCw, Trash2, Power, PowerOff, Edit } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, RefreshCw, Trash2, Power, PowerOff, Edit, RotateCcw, RefreshCcw, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getPodcasts, createPodcast, deletePodcast, updatePodcast, refreshPodcast } from '../services/api';
+import { getPodcasts, createPodcast, deletePodcast, updatePodcast, refreshPodcast, resetPodcastCounter, startOverPodcast, rebuildPodcastMetadata } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Podcasts() {
   const { t } = useTranslation();
@@ -13,6 +15,8 @@ function Podcasts() {
   const [showModal, setShowModal] = useState(false);
   const [editingPodcast, setEditingPodcast] = useState(null);
   const [savingPodcast, setSavingPodcast] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [newPodcast, setNewPodcast] = useState({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
   
   useEffect(() => {
@@ -70,6 +74,50 @@ function Podcasts() {
     setEditingPodcast(null);
     setNewPodcast({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
   };
+
+  const openConfirmAction = (type, podcast) => {
+    setConfirmAction({ type, podcast });
+  };
+
+  const closeConfirmAction = () => {
+    if (actionLoading) return;
+    setConfirmAction(null);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction || actionLoading) return;
+    const { type, podcast } = confirmAction;
+    setActionLoading(true);
+    try {
+      if (type === 'resetCounter') {
+        await resetPodcastCounter(podcast._id);
+        toast.success(t('podcasts.messages.resetCounterSuccess', { name: podcast.name }));
+      }
+      if (type === 'rebuildMetadata') {
+        await rebuildPodcastMetadata(podcast._id);
+        toast.success(t('podcasts.messages.rebuildMetadataSuccess', { name: podcast.name }));
+      }
+      if (type === 'startOver') {
+        await startOverPodcast(podcast._id);
+        toast.success(t('podcasts.messages.startOverSuccess', { name: podcast.name }));
+      }
+      setShowModal(false);
+      setEditingPodcast(null);
+      fetchPodcasts();
+    } catch (error) {
+      let errorMsg = t('podcasts.messages.startOverFailed');
+      if (type === 'resetCounter') {
+        errorMsg = t('podcasts.messages.resetCounterFailed');
+      }
+      if (type === 'rebuildMetadata') {
+        errorMsg = t('podcasts.messages.rebuildMetadataFailed');
+      }
+      toast.error(errorMsg + ': ' + (error.response?.data?.error || error.message));
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
   
   const handleDelete = async (id, name) => {
     if (!window.confirm(t('podcasts.messages.deleteConfirm', { name }))) return;
@@ -108,6 +156,8 @@ function Podcasts() {
     return <div className="text-center py-12">{t('common.loading')}</div>;
   }
   
+  const rssChanged = editingPodcast && newPodcast.rssUrl !== editingPodcast.rssUrl;
+
   return (
     <div>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -150,6 +200,13 @@ function Podcasts() {
             </div>
             
             <div className="flex gap-2">
+              <Link
+                to={`/podcasts/${podcast._id}/manage`}
+                className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {t('podcastManagement.actions.manage')}
+              </Link>
               <button
                 onClick={() => handleRefresh(podcast._id, podcast.name)}
                 className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
@@ -228,11 +285,11 @@ function Podcasts() {
                     onChange={(e) => setNewPodcast({ ...newPodcast, rssUrl: e.target.value })}
                     className="input"
                     placeholder={t('podcasts.placeholders.rssUrl')}
-                    disabled={editingPodcast !== null || savingPodcast}
+                    disabled={savingPodcast}
                   />
-                  {editingPodcast && (
+                  {editingPodcast && rssChanged && (
                     <p className="text-xs text-gray-500 mt-1">
-                      {t('podcasts.help.rssUrlNoEdit')}
+                      {t('podcasts.help.rssUrlChangeWarning')}
                     </p>
                   )}
                 </div>
@@ -278,10 +335,71 @@ function Podcasts() {
                   {t('common.cancel')}
                 </button>
               </div>
+              {editingPodcast && (
+                <div className="mt-6 border-t pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('podcasts.advanced.title')}</h3>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openConfirmAction('rebuildMetadata', editingPodcast)}
+                      className="btn btn-secondary flex items-center gap-2"
+                      disabled={savingPodcast || actionLoading}
+                    >
+                      <RefreshCcw className="w-4 h-4" />
+                      {t('podcasts.actions.rebuildMetadata')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openConfirmAction('resetCounter', editingPodcast)}
+                      className="btn btn-secondary flex items-center gap-2"
+                      disabled={savingPodcast || actionLoading}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      {t('podcasts.actions.resetCounter')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openConfirmAction('startOver', editingPodcast)}
+                      className="btn btn-danger flex items-center gap-2"
+                      disabled={savingPodcast || actionLoading}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {t('podcasts.actions.startOver')}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{t('podcasts.help.advancedActions')}</p>
+                </div>
+              )}
             </form>
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!confirmAction}
+        onClose={closeConfirmAction}
+        onConfirm={handleConfirmAction}
+        title={confirmAction?.type === 'resetCounter'
+          ? t('podcasts.confirm.resetCounterTitle')
+          : confirmAction?.type === 'rebuildMetadata'
+            ? t('podcasts.confirm.rebuildMetadataTitle')
+            : t('podcasts.confirm.startOverTitle')
+        }
+        message={confirmAction?.type === 'resetCounter'
+          ? t('podcasts.confirm.resetCounterMessage', { name: confirmAction?.podcast?.name })
+          : confirmAction?.type === 'rebuildMetadata'
+            ? t('podcasts.confirm.rebuildMetadataMessage', { name: confirmAction?.podcast?.name })
+            : t('podcasts.confirm.startOverMessage', { name: confirmAction?.podcast?.name })
+        }
+        confirmText={confirmAction?.type === 'resetCounter'
+          ? t('podcasts.actions.resetCounter')
+          : confirmAction?.type === 'rebuildMetadata'
+            ? t('podcasts.actions.rebuildMetadata')
+            : t('podcasts.actions.startOver')
+        }
+        cancelText={t('common.cancel')}
+        confirmButtonClass={confirmAction?.type === 'startOver' ? 'btn-danger' : 'btn-primary'}
+      />
     </div>
   );
 }

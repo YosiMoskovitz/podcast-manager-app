@@ -36,6 +36,15 @@ const episodeSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  protectedFromCleanup: {
+    type: Boolean,
+    default: false
+  },
+  removedFromSystem: {
+    type: Boolean,
+    default: false
+  },
+  removedFromSystemAt: Date,
   downloadDate: Date,
   localPath: String,
   cloudFileId: String,

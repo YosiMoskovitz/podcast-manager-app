@@ -246,14 +246,27 @@ export async function deleteFile(fileId) {
   }
 }
 
+export async function removeEpisodeFromDrive(episode) {
+  if (!episode?.cloudFileId) return false;
+  await deleteFile(episode.cloudFileId);
+  await Episode.findByIdAndUpdate(episode._id, {
+    cloudFileId: null,
+    cloudUrl: null,
+    removedFromSystem: true,
+    removedFromSystemAt: new Date()
+  });
+  return true;
+}
+
 export async function cleanupOldEpisodes(podcast, keepCount) {
   try {
-    const episodes = await Episode.find({ podcast: podcast._id, cloudFileId: { $exists: true, $ne: null } }).sort({ pubDate: -1 }).skip(keepCount);
+    const episodes = await Episode.find({
+      podcast: podcast._id,
+      cloudFileId: { $exists: true, $ne: null },
+      protectedFromCleanup: { $ne: true }
+    }).sort({ pubDate: -1 }).skip(keepCount);
     for (const episode of episodes) {
-      if (episode.cloudFileId) {
-        await deleteFile(episode.cloudFileId);
-        await Episode.findByIdAndUpdate(episode._id, { cloudFileId: null, cloudUrl: null });
-      }
+      await removeEpisodeFromDrive(episode);
     }
     // High-level summary of cleanup kept at info level since it's a meaningful operation
     logger.info('Cleaned up ' + episodes.length + ' old episodes for ' + podcast.name);

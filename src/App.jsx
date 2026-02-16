@@ -8,6 +8,7 @@ import Episodes from './pages/Episodes';
 import Statistics from './pages/Statistics';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import PodcastManagement from './pages/PodcastManagement';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -39,6 +40,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/podcasts" element={<Podcasts />} />
+                <Route path="/podcasts/:id/manage" element={<PodcastManagement />} />
                 <Route path="/episodes" element={<Episodes />} />
                 <Route path="/statistics" element={<Statistics />} />
                 <Route path="/settings" element={<Settings />} />

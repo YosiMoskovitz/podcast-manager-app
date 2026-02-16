@@ -147,9 +147,16 @@
     "actions": {
       "refresh": "Refresh",
       "create": "Create",
+      "saving": "Creating...",
       "delete": "Delete",
+      "rebuildMetadata": "Rebuild Metadata",
+      "resetCounter": "Reset Numbering",
+      "startOver": "Start Over",
       "enabled": "enabled",
       "disabled": "disabled"
+    },
+    "advanced": {
+      "title": "Advanced Actions"
     },
     "status": {
       "active": "Active",
@@ -168,7 +175,21 @@
       "toggleSuccess": "Podcast {{status}}",
       "toggleFailed": "Failed to update podcast",
       "refreshSuccess": "Refreshed \"{{name}}\": {{count}} new episodes found",
-      "refreshFailed": "Failed to refresh podcast"
+      "refreshFailed": "Failed to refresh podcast",
+      "rebuildMetadataSuccess": "Rebuilt metadata for \"{{name}}\"",
+      "rebuildMetadataFailed": "Failed to rebuild metadata",
+      "resetCounterSuccess": "Reset numbering for \"{{name}}\"",
+      "resetCounterFailed": "Failed to reset numbering",
+      "startOverSuccess": "Started over for \"{{name}}\"",
+      "startOverFailed": "Failed to start over"
+    },
+    "confirm": {
+      "rebuildMetadataTitle": "Rebuild Podcast Metadata",
+      "rebuildMetadataMessage": "Rebuild metadata for \"{{name}}\" from its RSS feed?",
+      "resetCounterTitle": "Reset Episode Numbering",
+      "resetCounterMessage": "Reset numbering for \"{{name}}\"? Future downloads will start from 001.",
+      "startOverTitle": "Start Over Podcast",
+      "startOverMessage": "Start over \"{{name}}\"? This deletes all episodes and Drive files for this podcast."
     },
     "placeholders": {
       "name": "My Favorite Podcast",
@@ -179,7 +200,47 @@
       "driveFolderName": "This is the folder name that will be created in your Google Drive. Defaults to podcast name.",
       "keepEpisodeCount": "Number of recent episodes to keep in cloud storage",
       "keepEpisodeCountTip": "💡 Tip: Set to <strong>0</strong> to keep all episodes (unlimited)",
-      "rssUrlNoEdit": "RSS URL cannot be changed after creation"
+      "rssUrlNoEdit": "RSS URL cannot be changed after creation",
+      "rssUrlChangeWarning": "Changing the RSS feed updates metadata and keeps existing episodes.",
+      "advancedActions": "Use these only when you really want to reset numbering or start fresh."
+    }
+  },
+  "podcastManagement": {
+    "title": "Podcast Management",
+    "backToPodcasts": "Back to Podcasts",
+    "actions": {
+      "manage": "Manage",
+      "reload": "Reload",
+      "download": "Download",
+      "protect": "Protect",
+      "unprotect": "Unprotect",
+      "removeFromDrive": "Remove from Drive"
+    },
+    "status": {
+      "new": "New",
+      "pending": "Pending",
+      "downloading": "Downloading",
+      "completed": "Completed",
+      "failed": "Failed",
+      "removed": "Removed",
+      "protected": "Protected"
+    },
+    "messages": {
+      "loadFailed": "Failed to load podcast episodes",
+      "downloadStarted": "Download started for \"{{title}}\"",
+      "downloadFailed": "Failed to start download",
+      "protected": "Episode protected from cleanup",
+      "unprotected": "Episode unprotected from cleanup",
+      "protectFailed": "Failed to update protection",
+      "removed": "Removed \"{{title}}\" from Drive",
+      "removeFailed": "Failed to remove episode from Drive"
+    },
+    "confirm": {
+      "removeFromDrive": "Remove \"{{title}}\" from Drive?"
+    },
+    "empty": {
+      "title": "No episodes found",
+      "description": "This RSS feed has no episodes yet"
     }
   },
   "episodes": {
@@ -196,22 +257,31 @@
       "pending": "Pending",
       "downloading": "Downloading",
       "completed": "Completed",
-      "failed": "Failed"
+      "failed": "Failed",
+      "removed": "Removed",
+      "protected": "Protected"
     },
     "actions": {
       "download": "Download",
       "resync": "Re-sync",
-      "retry": "Retry"
+      "retry": "Retry",
+      "removeFromDrive": "Remove"
     },
     "titles": {
       "resync": "Re-sync episode to Drive",
-      "retry": "Retry failed download"
+      "retry": "Retry failed download",
+      "removeFromDrive": "Remove episode from Drive"
     },
     "messages": {
       "downloadStarted": "Download started for \"{{title}}\"",
       "downloadFailed": "Failed to start download",
       "resyncStarted": "Re-sync started for \"{{title}}\"",
-      "resyncFailed": "Failed to start re-sync"
+      "resyncFailed": "Failed to start re-sync",
+      "removed": "Removed \"{{title}}\" from Drive",
+      "removeFailed": "Failed to remove episode from Drive"
+    },
+    "confirm": {
+      "removeFromDrive": "Remove \"{{title}}\" from Drive?"
     },
     "error": "Error",
     "unknown": "Unknown"
