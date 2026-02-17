@@ -14,6 +14,7 @@ const api = axios.create({
 // Podcasts
 export const getPodcasts = () => api.get('/podcasts');
 export const getPodcast = (id) => api.get(`/podcasts/${id}`);
+export const searchPodcasts = (query, limit = 10) => api.get('/podcasts/search', { params: { q: query, limit } });
 export const createPodcast = (data) => api.post('/podcasts', data);
 export const updatePodcast = (id, data) => api.put(`/podcasts/${id}`, data);
 export const deletePodcast = (id) => api.delete(`/podcasts/${id}`);

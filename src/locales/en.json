@@ -11,6 +11,7 @@
     "yes": "Yes",
     "no": "No",
     "search": "Search",
+    "searching": "Searching...",
     "filter": "Filter",
     "export": "Export",
     "import": "Import",
@@ -181,7 +182,9 @@
       "resetCounterSuccess": "Reset numbering for \"{{name}}\"",
       "resetCounterFailed": "Failed to reset numbering",
       "startOverSuccess": "Started over for \"{{name}}\"",
-      "startOverFailed": "Failed to start over"
+      "startOverFailed": "Failed to start over",
+      "searchFailed": "Failed to search podcasts",
+      "noSearchResults": "No podcasts found"
     },
     "confirm": {
       "rebuildMetadataTitle": "Rebuild Podcast Metadata",
@@ -195,6 +198,14 @@
       "name": "My Favorite Podcast",
       "rssUrl": "https://...",
       "driveFolderName": "Podcast folder name in Google Drive"
+    },
+    "inputMode": {
+      "manual": "Manual Entry",
+      "search": "Search"
+    },
+    "search": {
+      "label": "Search for a podcast",
+      "placeholder": "Enter podcast name..."
     },
     "help": {
       "driveFolderName": "This is the folder name that will be created in your Google Drive. Defaults to podcast name.",

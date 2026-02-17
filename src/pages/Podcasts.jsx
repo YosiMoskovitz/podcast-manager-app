@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, RefreshCw, Trash2, Power, PowerOff, Edit, RotateCcw, RefreshCcw, Settings } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Power, PowerOff, Edit, RotateCcw, RefreshCcw, Settings, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getPodcasts, createPodcast, deletePodcast, updatePodcast, refreshPodcast, resetPodcastCounter, startOverPodcast, rebuildPodcastMetadata } from '../services/api';
+import { getPodcasts, createPodcast, deletePodcast, updatePodcast, refreshPodcast, resetPodcastCounter, startOverPodcast, rebuildPodcastMetadata, searchPodcasts } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -18,6 +18,12 @@ function Podcasts() {
   const [confirmAction, setConfirmAction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [newPodcast, setNewPodcast] = useState({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
+  
+  // Search mode states
+  const [inputMode, setInputMode] = useState('manual'); // 'manual' or 'search'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   
   useEffect(() => {
     fetchPodcasts();
@@ -73,6 +79,39 @@ function Podcasts() {
     setShowModal(false);
     setEditingPodcast(null);
     setNewPodcast({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
+    setInputMode('manual');
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || searching) return;
+    
+    setSearching(true);
+    try {
+      const response = await searchPodcasts(searchQuery.trim(), 10);
+      setSearchResults(response.data);
+      if (response.data.length === 0) {
+        toast.info(t('podcasts.messages.noSearchResults') || 'No podcasts found');
+      }
+    } catch (error) {
+      toast.error(t('podcasts.messages.searchFailed') + ': ' + (error.response?.data?.error || error.message));
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (result) => {
+    setNewPodcast({
+      name: result.name,
+      rssUrl: result.feedUrl,
+      driveFolderName: result.name,
+      keepEpisodeCount: 10
+    });
+    setInputMode('manual'); // Switch to manual mode to show the filled form
+    setSearchResults([]);
+    setSearchQuery('');
   };
 
   const openConfirmAction = (type, podcast) => {
@@ -248,12 +287,116 @@ function Podcasts() {
       {/* Add/Edit Podcast Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">
               {editingPodcast ? t('podcasts.editTitle') : t('podcasts.addNewTitle')}
             </h2>
-            <form onSubmit={handleCreate}>
+            
+            {/* Toggle between Manual and Search - only show when adding new */}
+            {!editingPodcast && (
+              <div className="flex gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode('manual');
+                    setSearchResults([]);
+                  }}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    inputMode === 'manual' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {t('podcasts.inputMode.manual') || 'Manual Entry'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInputMode('search')}
+                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                    inputMode === 'search' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  <Search className="w-4 h-4" />
+                  {t('podcasts.inputMode.search') || 'Search'}
+                </button>
+              </div>
+            )}
+
+            {/* Search Mode */}
+            {inputMode === 'search' && !editingPodcast && (
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('podcasts.search.label') || 'Search for a podcast'}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      className="input flex-1"
+                      placeholder={t('podcasts.search.placeholder') || 'Enter podcast name...'}
+                      disabled={searching}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSearch}
+                      className="btn btn-primary flex items-center gap-2"
+                      disabled={searching || !searchQuery.trim()}
+                    >
+                      <Search className="w-4 h-4" />
+                      {searching ? (t('common.searching') || 'Searching...') : (t('common.search') || 'Search')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Results */}
+                {searchResults.length > 0 && (
+                  <div className="border rounded-lg max-h-96 overflow-y-auto">
+                    {searchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        onClick={() => handleSelectSearchResult(result)}
+                        className="w-full p-3 flex gap-3 hover:bg-gray-50 transition-colors border-b last:border-b-0 text-left"
+                      >
+                        {result.thumbnailUrl && (
+                          <img 
+                            src={result.thumbnailUrl} 
+                            alt={result.name}
+                            className="w-16 h-16 rounded object-cover flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm truncate">{result.name}</h4>
+                          <p className="text-xs text-gray-600 truncate">{result.author}</p>
+                          <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                            {result.genre && <span>{result.genre}</span>}
+                            {result.episodeCount > 0 && (
+                              <span>{result.episodeCount} {t('podcasts.fields.episodes') || 'episodes'}</span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button type="button" onClick={handleCloseModal} className="btn btn-secondary flex-1">
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Manual Mode Form */}
+            {inputMode === 'manual' && (
+              <form onSubmit={handleCreate}>
+                <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">{t('podcasts.fields.name')}</label>
                   <input
@@ -370,7 +513,8 @@ function Podcasts() {
                   <p className="text-xs text-gray-500 mt-2">{t('podcasts.help.advancedActions')}</p>
                 </div>
               )}
-            </form>
+              </form>
+            )}
           </div>
         </div>
       )}

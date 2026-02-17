@@ -8,11 +8,29 @@ import { loadUserKey, decryptDocuments, decryptDocument, encryptDocument } from 
 import { logger } from '../utils/logger.js';
 import DownloadHistory from '../models/DownloadHistory.js';
 import { initializeDrive, listFilesInFolder, deleteFile } from '../services/cloudStorage.js';
+import { searchApplePodcasts } from '../services/podcastSearch.js';
 
 const router = express.Router();
 
 // Apply encryption middleware to all routes
 router.use(loadUserKey);
+
+// Search podcasts via Apple Podcasts API
+router.get('/search', async (req, res) => {
+  try {
+    const { q, limit } = req.query;
+    
+    if (!q || !q.trim()) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+    
+    const results = await searchApplePodcasts(q.trim(), parseInt(limit) || 10);
+    res.json(results);
+  } catch (error) {
+    logger.error('Error searching podcasts:', error);
+    res.status(500).json({ error: 'Failed to search podcasts' });
+  }
+});
 
 // Get all podcasts
 router.get('/', async (req, res) => {

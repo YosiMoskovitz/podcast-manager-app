@@ -11,6 +11,7 @@
     "yes": "כן",
     "no": "לא",
     "search": "חיפוש",
+    "searching": "מחפש...",
     "filter": "סינון",
     "export": "ייצא",
     "import": "ייבא",
@@ -181,7 +182,9 @@
       "resetCounterSuccess": "המספור אופס עבור \"{{name}}\"",
       "resetCounterFailed": "נכשל לאפס מספור",
       "startOverSuccess": "התחלה מחדש עבור \"{{name}}\" הושלמה",
-      "startOverFailed": "נכשל להתחיל מחדש"
+      "startOverFailed": "נכשל להתחיל מחדש",
+      "searchFailed": "נכשל לחפש פודקאסטים",
+      "noSearchResults": "לא נמצאו פודקאסטים"
     },
     "confirm": {
       "rebuildMetadataTitle": "בנה מחדש מטא-דאטה לפודקאסט",
@@ -195,6 +198,14 @@
       "name": "הפודקאסט האהוב שלי",
       "rssUrl": "https://...",
       "driveFolderName": "שם תיקיית הפודקאסט ב-Google Drive"
+    },
+    "inputMode": {
+      "manual": "הזנה ידנית",
+      "search": "חיפוש"
+    },
+    "search": {
+      "label": "חפש פודקאסט",
+      "placeholder": "הזן שם פודקאסט..."
     },
     "help": {
       "driveFolderName": "זה שם התיקייה שתיווצר ב-Google Drive שלך. ברירת מחדל היא שם הפודקאסט.",
