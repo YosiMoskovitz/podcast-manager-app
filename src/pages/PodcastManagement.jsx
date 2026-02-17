@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { downloadRssEpisode, getPodcastRssItems, protectEpisode, removeEpisodeFromDrive } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function PodcastManagement() {
   const { id } = useParams();
@@ -14,6 +15,8 @@ function PodcastManagement() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [removeEpisodeData, setRemoveEpisodeData] = useState({ id: null, title: '' });
 
   const fetchItems = async () => {
     try {
@@ -60,9 +63,15 @@ function PodcastManagement() {
     }
   };
 
-  const handleRemove = async (episodeId, title) => {
+  const handleRemove = (episodeId, title) => {
     if (actionId) return;
-    if (!window.confirm(t('podcastManagement.confirm.removeFromDrive', { title }))) return;
+    setRemoveEpisodeData({ id: episodeId, title });
+    setShowRemoveConfirm(true);
+  };
+
+  const executeRemove = async () => {
+    setShowRemoveConfirm(false);
+    const { id: episodeId, title } = removeEpisodeData;
     setActionId(episodeId);
     try {
       await removeEpisodeFromDrive(episodeId);
@@ -217,6 +226,18 @@ function PodcastManagement() {
           <p className="text-sm">{t('podcastManagement.empty.description')}</p>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showRemoveConfirm}
+        onClose={() => setShowRemoveConfirm(false)}
+        onConfirm={executeRemove}
+        title={t('podcastManagement.confirm.removeFromDrive.title') || 'Remove from Drive'}
+        message={t('podcastManagement.confirm.removeFromDrive', { title: removeEpisodeData.title })}
+        confirmText={t('podcastManagement.confirm.removeFromDrive.confirm') || 'Remove'}
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+        icon={Trash2}
+        iconColor="text-red-600"
+      />
     </div>
   );
 }

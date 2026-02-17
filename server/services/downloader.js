@@ -8,8 +8,51 @@ import userKeyManager from './userKeyManager.js';
 import { sanitizeFullFilename } from '../utils/sanitizeFilename.js';
 import { addID3Metadata, downloadPodcastImage } from './metadataService.js';
 
+/**
+ * Bypass ad-injection services (Podtrac, Megaphone, etc.) by extracting the real audio URL
+ * These services inject ads by intercepting downloads through redirect services
+ * Original source: browser plays directly, downloader gets ad-injected version
+ * 
+ * @param {string} url - The audio URL from RSS feed
+ * @returns {string} The direct audio URL (ad-free)
+ */
+function bypassAdServices(url) {
+  if (!url || typeof url !== 'string') {
+    return url;
+  }
+
+  // Podtrac: https://dts.podtrac.com/redirect.mp3/example.com/audio.mp3?params=...
+  // Extract: https://example.com/audio.mp3
+  if (url.includes('podtrac.com')) {
+    // Match: podtrac.com/redirect.{ext}/{domain_and_path}?...
+    const match = url.match(/podtrac\.com\/redirect\.(mp3|m4a|opus|ogg)\/([^?]+)/);
+    if (match) {
+      const domain = match[2];
+      const realUrl = `https://${domain}`;
+      logger.info(`Bypassing Podtrac ad-injection: extracted real URL`);
+      return realUrl;
+    }
+  }
+
+  // Megaphone: https://megaphone.fm/...
+  // These also inject ads, request directly from source domain instead
+  if (url.includes('megaphone.fm')) {
+    logger.warn(`Detected Megaphone ad-injection service in URL: ${url}`);
+    // Megaphone doesn't have an easy bypass, but browser headers help
+  }
+
+  // Simplecast: https://simplecast.fm/...
+  if (url.includes('simplecast.fm')) {
+    logger.warn(`Detected Simplecast ad-injection service in URL: ${url}`);
+  }
+
+  return url;
+}
+
 // Helper function to retry download on network errors
 async function downloadWithRetry(url, maxRetries = 3) {
+  // Try to bypass ad-injection services first
+  url = bypassAdServices(url);
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await axios({

@@ -24,10 +24,20 @@ function Podcasts() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [searchTimeoutRef, setSearchTimeoutRef] = useState(null);
   
   useEffect(() => {
     fetchPodcasts();
   }, []);
+  
+  useEffect(() => {
+    // Cleanup timeout on component unmount or modal close
+    return () => {
+      if (searchTimeoutRef) {
+        clearTimeout(searchTimeoutRef);
+      }
+    };
+  }, [searchTimeoutRef]);
   
   const fetchPodcasts = async () => {
     try {
@@ -76,6 +86,12 @@ function Podcasts() {
   };
 
   const handleCloseModal = () => {
+    // Clear search timeout
+    if (searchTimeoutRef) {
+      clearTimeout(searchTimeoutRef);
+      setSearchTimeoutRef(null);
+    }
+    
     setShowModal(false);
     setEditingPodcast(null);
     setNewPodcast({ name: '', rssUrl: '', driveFolderName: '', keepEpisodeCount: 10 });
@@ -84,12 +100,15 @@ function Podcasts() {
     setSearchResults([]);
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim() || searching) return;
+  const handleSearch = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
     
     setSearching(true);
     try {
-      const response = await searchPodcasts(searchQuery.trim(), 10);
+      const response = await searchPodcasts(query.trim(), 10);
       setSearchResults(response.data);
       if (response.data.length === 0) {
         toast.info(t('podcasts.messages.noSearchResults') || 'No podcasts found');
@@ -100,6 +119,29 @@ function Podcasts() {
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleSearchInputChange = (query) => {
+    setSearchQuery(query);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef) {
+      clearTimeout(searchTimeoutRef);
+    }
+    
+    // Clear results immediately if input is empty
+    if (!query.trim()) {
+      setSearchResults([]);
+      setSearchTimeoutRef(null);
+      return;
+    }
+    
+    // Debounce search: wait 500ms after user stops typing
+    const timeoutId = setTimeout(() => {
+      handleSearch(query);
+    }, 500);
+    
+    setSearchTimeoutRef(timeoutId);
   };
 
   const handleSelectSearchResult = (result) => {
@@ -128,6 +170,11 @@ function Podcasts() {
     const { type, podcast } = confirmAction;
     setActionLoading(true);
     try {
+      if (type === 'delete') {
+        await deletePodcast(podcast._id);
+        toast.success(t('podcasts.messages.deleteSuccess', { name: podcast.name }));
+        fetchPodcasts();
+      }
       if (type === 'resetCounter') {
         await resetPodcastCounter(podcast._id);
         toast.success(t('podcasts.messages.resetCounterSuccess', { name: podcast.name }));
@@ -145,6 +192,9 @@ function Podcasts() {
       fetchPodcasts();
     } catch (error) {
       let errorMsg = t('podcasts.messages.startOverFailed');
+      if (type === 'delete') {
+        errorMsg = t('podcasts.messages.deleteFailed');
+      }
       if (type === 'resetCounter') {
         errorMsg = t('podcasts.messages.resetCounterFailed');
       }
@@ -158,16 +208,8 @@ function Podcasts() {
     }
   };
   
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(t('podcasts.messages.deleteConfirm', { name }))) return;
-    
-    try {
-      await deletePodcast(id);
-      toast.success(t('podcasts.messages.deleteSuccess', { name }));
-      fetchPodcasts();
-    } catch (error) {
-      toast.error(t('podcasts.messages.deleteFailed') + ': ' + (error.response?.data?.error || error.message));
-    }
+  const handleDelete = (id, name) => {
+    openConfirmAction('delete', { _id: id, name });
   };
   
   const handleToggleEnabled = async (podcast) => {
@@ -331,26 +373,18 @@ function Podcasts() {
                   <label className="block text-sm font-medium mb-2">
                     {t('podcasts.search.label') || 'Search for a podcast'}
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      className="input flex-1"
-                      placeholder={t('podcasts.search.placeholder') || 'Enter podcast name...'}
-                      disabled={searching}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSearch}
-                      className="btn btn-primary flex items-center gap-2"
-                      disabled={searching || !searchQuery.trim()}
-                    >
-                      <Search className="w-4 h-4" />
-                      {searching ? (t('common.searching') || 'Searching...') : (t('common.search') || 'Search')}
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
+                    className="input w-full"
+                    placeholder={t('podcasts.search.placeholder') || 'Enter podcast name...'}
+                    disabled={searching}
+                    autoFocus
+                  />
+                  {searching && (
+                    <p className="text-xs text-gray-500 mt-2">{t('common.searching') || 'Searching...'}</p>
+                  )}
                 </div>
 
                 {/* Search Results */}
@@ -523,26 +557,34 @@ function Podcasts() {
         isOpen={!!confirmAction}
         onClose={closeConfirmAction}
         onConfirm={handleConfirmAction}
-        title={confirmAction?.type === 'resetCounter'
+        title={confirmAction?.type === 'delete'
+          ? t('podcasts.confirm.deleteTitle')
+          : confirmAction?.type === 'resetCounter'
           ? t('podcasts.confirm.resetCounterTitle')
           : confirmAction?.type === 'rebuildMetadata'
             ? t('podcasts.confirm.rebuildMetadataTitle')
             : t('podcasts.confirm.startOverTitle')
         }
-        message={confirmAction?.type === 'resetCounter'
+        message={confirmAction?.type === 'delete'
+          ? t('podcasts.messages.deleteConfirm', { name: confirmAction?.podcast?.name })
+          : confirmAction?.type === 'resetCounter'
           ? t('podcasts.confirm.resetCounterMessage', { name: confirmAction?.podcast?.name })
           : confirmAction?.type === 'rebuildMetadata'
             ? t('podcasts.confirm.rebuildMetadataMessage', { name: confirmAction?.podcast?.name })
             : t('podcasts.confirm.startOverMessage', { name: confirmAction?.podcast?.name })
         }
-        confirmText={confirmAction?.type === 'resetCounter'
+        confirmText={confirmAction?.type === 'delete'
+          ? t('common.delete') || 'Delete'
+          : confirmAction?.type === 'resetCounter'
           ? t('podcasts.actions.resetCounter')
           : confirmAction?.type === 'rebuildMetadata'
             ? t('podcasts.actions.rebuildMetadata')
             : t('podcasts.actions.startOver')
         }
         cancelText={t('common.cancel')}
-        confirmButtonClass={confirmAction?.type === 'startOver' ? 'btn-danger' : 'btn-primary'}
+        confirmButtonClass={confirmAction?.type === 'delete' || confirmAction?.type === 'startOver' ? 'bg-red-600 hover:bg-red-700 text-white' : 'btn-primary'}
+        icon={confirmAction?.type === 'delete' ? Trash2 : undefined}
+        iconColor={confirmAction?.type === 'delete' ? 'text-red-600' : undefined}
       />
     </div>
   );

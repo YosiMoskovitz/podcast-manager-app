@@ -48,6 +48,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
+    "baseline-browser-mapping": "latest",
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.2",
     "postcss": "^8.4.32",

@@ -4,12 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { getEpisodes, downloadEpisode, removeEpisodeFromDrive, resyncEpisode } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Episodes() {
   const { t } = useTranslation();
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [removeEpisodeData, setRemoveEpisodeData] = useState({ id: null, title: '' });
   const { toasts, removeToast, toast } = useToast();
   
   useEffect(() => {
@@ -48,8 +51,14 @@ function Episodes() {
     }
   };
 
-  const handleRemove = async (id, title) => {
-    if (!window.confirm(t('episodes.confirm.removeFromDrive', { title }))) return;
+  const handleRemove = (id, title) => {
+    setRemoveEpisodeData({ id, title });
+    setShowRemoveConfirm(true);
+  };
+
+  const executeRemove = async () => {
+    setShowRemoveConfirm(false);
+    const { id, title } = removeEpisodeData;
     try {
       await removeEpisodeFromDrive(id);
       toast.success(t('episodes.messages.removed', { title }));
@@ -222,6 +231,18 @@ function Episodes() {
           <p className="text-sm">{t('episodes.noEpisodesDescription')}</p>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showRemoveConfirm}
+        onClose={() => setShowRemoveConfirm(false)}
+        onConfirm={executeRemove}
+        title={t('episodes.confirm.removeFromDrive.title') || 'Remove from Drive'}
+        message={t('episodes.confirm.removeFromDrive', { title: removeEpisodeData.title })}
+        confirmText={t('episodes.confirm.removeFromDrive.confirm') || 'Remove'}
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+        icon={Trash2}
+        iconColor="text-red-600"
+      />
     </div>
   );
 }
