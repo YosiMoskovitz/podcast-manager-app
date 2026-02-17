@@ -49,10 +49,101 @@ function bypassAdServices(url) {
   return url;
 }
 
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'audio/*,application/ogg,*/*;q=0.9',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Cache-Control': 'no-cache',
+  'Pragma': 'no-cache',
+  'Sec-Fetch-Dest': 'audio',
+  'Sec-Fetch-Mode': 'cors',
+  'DNT': '1',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1'
+};
+
+function buildHeaders(url) {
+  try {
+    const { origin } = new URL(url);
+    return {
+      ...BROWSER_HEADERS,
+      'Origin': origin,
+      'Referer': `${origin}/`
+    };
+  } catch {
+    return { ...BROWSER_HEADERS };
+  }
+}
+
+async function resolveAudioUrl(initialUrl, maxHops = 5) {
+  if (!initialUrl) return initialUrl;
+  let currentUrl = bypassAdServices(initialUrl);
+  const trace = [currentUrl];
+
+  for (let hop = 0; hop < maxHops; hop += 1) {
+    try {
+      const response = await axios({
+        method: 'head',
+        url: currentUrl,
+        timeout: 15000,
+        maxRedirects: 0,
+        validateStatus: status => status >= 200 && status < 400,
+        headers: buildHeaders(currentUrl)
+      });
+
+      const location = response.headers?.location;
+      if (!location || response.status < 300 || response.status >= 400) {
+        break;
+      }
+
+      const nextUrl = new URL(location, currentUrl).toString();
+      currentUrl = bypassAdServices(nextUrl);
+      trace.push(currentUrl);
+    } catch (error) {
+      // Some hosts reject HEAD; fall back to GET with minimal range.
+      try {
+        const response = await axios({
+          method: 'get',
+          url: currentUrl,
+          timeout: 15000,
+          maxRedirects: 0,
+          validateStatus: status => status >= 200 && status < 400,
+          headers: {
+            ...buildHeaders(currentUrl),
+            'Range': 'bytes=0-0'
+          }
+        });
+
+        const location = response.headers?.location;
+        if (!location || response.status < 300 || response.status >= 400) {
+          break;
+        }
+
+        const nextUrl = new URL(location, currentUrl).toString();
+        currentUrl = bypassAdServices(nextUrl);
+        trace.push(currentUrl);
+      } catch (fallbackError) {
+        logger.debug('Failed to resolve redirect chain for audio URL', {
+          error: fallbackError?.message || fallbackError,
+          url: currentUrl
+        });
+        break;
+      }
+    }
+  }
+
+  if (trace.length > 1) {
+    logger.debug('Resolved audio URL redirect chain', { trace });
+  }
+
+  return currentUrl;
+}
+
 // Helper function to retry download on network errors
 async function downloadWithRetry(url, maxRetries = 3) {
-  // Try to bypass ad-injection services first
-  url = bypassAdServices(url);
+  // Try to bypass ad-injection services and resolve tracking redirects
+  url = await resolveAudioUrl(url);
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await axios({
@@ -67,19 +158,7 @@ async function downloadWithRetry(url, maxRetries = 3) {
         // Add browser-like headers to prevent ad-injection by CDN/ad servers
         // Many podcast platforms (AudioBoom, Anchor, etc.) detect bots and inject ads
         // Spoofing as a browser gets the ad-free stream served to web listeners
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'audio/*,application/ogg,*/*;q=0.9',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-          'Sec-Fetch-Dest': 'audio',
-          'Sec-Fetch-Mode': 'cors',
-          'DNT': '1',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1'
-        }
+        headers: buildHeaders(url)
       });
       return response;
     } catch (error) {
