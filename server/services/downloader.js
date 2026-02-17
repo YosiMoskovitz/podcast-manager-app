@@ -46,6 +46,40 @@ function bypassAdServices(url) {
     logger.warn(`Detected Simplecast ad-injection service in URL: ${url}`);
   }
 
+  // Audioboom/CloudFront: Uses media_type=dynamic for ad-injected versions
+  // Extract fallback_url (static/ad-free) or convert dynamic to static
+  if (url.includes('cloudfront.net') || url.includes('audioboom.com')) {
+    try {
+      const urlObj = new URL(url);
+      const params = urlObj.searchParams;
+      
+      // Check if this is a dynamic (ad-injected) media variant
+      if (params.get('media_type') === 'dynamic') {
+        // Try to extract fallback_url parameter (contains static version)
+        const fallbackUrl = params.get('fallback_url');
+        if (fallbackUrl) {
+          logger.info(`Bypassing Audioboom dynamic ads: using fallback_url (static)`);
+          return decodeURIComponent(fallbackUrl);
+        }
+        
+        // Fallback: convert media_type from dynamic to static
+        params.set('media_type', 'static');
+        params.delete('metadata'); // Remove ad decisioning metadata
+        logger.info(`Bypassing Audioboom dynamic ads: converted to static media_type`);
+        return urlObj.toString();
+      }
+      
+      // Also strip ad-serving parameters if present
+      if (params.has('metadata') && params.get('metadata')?.includes('general_run_ads')) {
+        params.delete('metadata');
+        logger.info(`Stripped Audioboom ad metadata from URL`);
+        return urlObj.toString();
+      }
+    } catch (err) {
+      logger.debug(`Failed to parse Audioboom URL for ad bypass: ${err.message}`);
+    }
+  }
+
   return url;
 }
 
