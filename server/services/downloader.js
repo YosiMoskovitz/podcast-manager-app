@@ -20,7 +20,23 @@ async function downloadWithRetry(url, maxRetries = 3) {
         maxRedirects: 5,
         // Keep connection alive for long downloads
         httpAgent: new (await import('http')).Agent({ keepAlive: true }),
-        httpsAgent: new (await import('https')).Agent({ keepAlive: true })
+        httpsAgent: new (await import('https')).Agent({ keepAlive: true }),
+        // Add browser-like headers to prevent ad-injection by CDN/ad servers
+        // Many podcast platforms (AudioBoom, Anchor, etc.) detect bots and inject ads
+        // Spoofing as a browser gets the ad-free stream served to web listeners
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'audio/*,application/ogg,*/*;q=0.9',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Sec-Fetch-Dest': 'audio',
+          'Sec-Fetch-Mode': 'cors',
+          'DNT': '1',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1'
+        }
       });
       return response;
     } catch (error) {
