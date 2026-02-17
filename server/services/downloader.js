@@ -136,48 +136,33 @@ async function resolveAudioUrl(initialUrl, maxHops = 5) {
   if (trace.length > 1) {
     logger.debug('Resolved audio URL redirect chain', { trace });
   }
+  return currentUrl;
+}
 
-  // Apply final ad-bypass cleanup to the resolved URL
-  // For Audioboom/CloudFront, strip ad-specific parameters while keeping auth tokens
-  if (currentUrl.includes('cloudfront.net') || currentUrl.includes('audioboom.com')) {
+function selectDownloadUrl(resolvedUrl) {
+  if (!resolvedUrl) return resolvedUrl;
+  if (resolvedUrl.includes('cloudfront.net') || resolvedUrl.includes('audioboom.com')) {
     try {
-      const urlObj = new URL(currentUrl);
+      const urlObj = new URL(resolvedUrl);
       const params = urlObj.searchParams;
-      
-      let modified = false;
-      
-      // Remove ad-serving metadata parameter
-      if (params.has('metadata')) {
-        const metadata = params.get('metadata');
-        if (metadata?.includes('general_run_ads') || metadata?.includes('dist=')) {
-          params.delete('metadata');
-          modified = true;
-          logger.info('Stripped Audioboom ad metadata parameter');
-        }
-      }
-      
-      // Change media_type from dynamic to static (keeps all auth params)
-      if (params.get('media_type') === 'dynamic') {
-        params.set('media_type', 'static');
-        modified = true;
-        logger.info('Converted Audioboom media_type from dynamic to static');
-      }
-      
-      if (modified) {
-        return urlObj.toString();
+      const mediaType = params.get('media_type');
+      const fallbackUrl = params.get('fallback_url');
+      if (mediaType === 'dynamic' && fallbackUrl) {
+        logger.info('Using Audioboom fallback_url (static) for download');
+        return fallbackUrl;
       }
     } catch (err) {
-      logger.debug('Failed to parse final URL for ad bypass', { error: err.message });
+      logger.debug('Failed to parse resolved URL for fallback selection', { error: err.message });
     }
   }
-
-  return currentUrl;
+  return resolvedUrl;
 }
 
 // Helper function to retry download on network errors
 async function downloadWithRetry(url, maxRetries = 3) {
   // Try to bypass ad-injection services and resolve tracking redirects
-  url = await resolveAudioUrl(url);
+  const resolvedUrl = await resolveAudioUrl(url);
+  url = selectDownloadUrl(resolvedUrl);
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await axios({
