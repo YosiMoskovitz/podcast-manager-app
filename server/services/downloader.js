@@ -46,40 +46,6 @@ function bypassAdServices(url) {
     logger.warn(`Detected Simplecast ad-injection service in URL: ${url}`);
   }
 
-  // Audioboom/CloudFront: Uses media_type=dynamic for ad-injected versions
-  // Extract fallback_url (static/ad-free) or convert dynamic to static
-  if (url.includes('cloudfront.net') || url.includes('audioboom.com')) {
-    try {
-      const urlObj = new URL(url);
-      const params = urlObj.searchParams;
-      
-      // Check if this is a dynamic (ad-injected) media variant
-      if (params.get('media_type') === 'dynamic') {
-        // Try to extract fallback_url parameter (contains static version)
-        const fallbackUrl = params.get('fallback_url');
-        if (fallbackUrl) {
-          logger.info(`Bypassing Audioboom dynamic ads: using fallback_url (static)`);
-          return decodeURIComponent(fallbackUrl);
-        }
-        
-        // Fallback: convert media_type from dynamic to static
-        params.set('media_type', 'static');
-        params.delete('metadata'); // Remove ad decisioning metadata
-        logger.info(`Bypassing Audioboom dynamic ads: converted to static media_type`);
-        return urlObj.toString();
-      }
-      
-      // Also strip ad-serving parameters if present
-      if (params.has('metadata') && params.get('metadata')?.includes('general_run_ads')) {
-        params.delete('metadata');
-        logger.info(`Stripped Audioboom ad metadata from URL`);
-        return urlObj.toString();
-      }
-    } catch (err) {
-      logger.debug(`Failed to parse Audioboom URL for ad bypass: ${err.message}`);
-    }
-  }
-
   return url;
 }
 
@@ -169,6 +135,40 @@ async function resolveAudioUrl(initialUrl, maxHops = 5) {
 
   if (trace.length > 1) {
     logger.debug('Resolved audio URL redirect chain', { trace });
+  }
+
+  // Apply final ad-bypass cleanup to the resolved URL
+  // For Audioboom/CloudFront, strip ad-specific parameters while keeping auth tokens
+  if (currentUrl.includes('cloudfront.net') || currentUrl.includes('audioboom.com')) {
+    try {
+      const urlObj = new URL(currentUrl);
+      const params = urlObj.searchParams;
+      
+      let modified = false;
+      
+      // Remove ad-serving metadata parameter
+      if (params.has('metadata')) {
+        const metadata = params.get('metadata');
+        if (metadata?.includes('general_run_ads') || metadata?.includes('dist=')) {
+          params.delete('metadata');
+          modified = true;
+          logger.info('Stripped Audioboom ad metadata parameter');
+        }
+      }
+      
+      // Change media_type from dynamic to static (keeps all auth params)
+      if (params.get('media_type') === 'dynamic') {
+        params.set('media_type', 'static');
+        modified = true;
+        logger.info('Converted Audioboom media_type from dynamic to static');
+      }
+      
+      if (modified) {
+        return urlObj.toString();
+      }
+    } catch (err) {
+      logger.debug('Failed to parse final URL for ad bypass', { error: err.message });
+    }
   }
 
   return currentUrl;
