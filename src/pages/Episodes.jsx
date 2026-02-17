@@ -236,9 +236,9 @@ function Episodes() {
         isOpen={showRemoveConfirm}
         onClose={() => setShowRemoveConfirm(false)}
         onConfirm={executeRemove}
-        title={t('episodes.confirm.removeFromDrive.title') || 'Remove from Drive'}
+        title={t('episodes.titles.removeFromDrive') || 'Remove from Drive'}
         message={t('episodes.confirm.removeFromDrive', { title: removeEpisodeData.title })}
-        confirmText={t('episodes.confirm.removeFromDrive.confirm') || 'Remove'}
+        confirmText={t('common.delete') || 'Remove'}
         confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
         icon={Trash2}
         iconColor="text-red-600"

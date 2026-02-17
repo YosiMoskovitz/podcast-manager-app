@@ -213,7 +213,7 @@
       "keepEpisodeCountTip": "💡 טיפ: הגדר ל-<strong>0</strong> כדי לשמור את כל הפרקים (ללא הגבלה)",
       "rssUrlNoEdit": "לא ניתן לשנות את כתובת ה-RSS לאחר היצירה",
       "rssUrlChangeWarning": "שינוי כתובת ה-RSS יעדכן מטא-דאטה וישמור את הפרקים הקיימים.",
-      "advancedActions": "השתמש בזה רק כאשר אתה באמת רוצה לאפס מספור או להתחיל נקי."
+      "advancedActions": "השתמש רק כשצריך לאפס או להתחיל מחדש."
     }
   },
   "podcastManagement": {

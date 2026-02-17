@@ -231,9 +231,9 @@ function PodcastManagement() {
         isOpen={showRemoveConfirm}
         onClose={() => setShowRemoveConfirm(false)}
         onConfirm={executeRemove}
-        title={t('podcastManagement.confirm.removeFromDrive.title') || 'Remove from Drive'}
+        title={t('podcastManagement.actions.removeFromDrive') || 'Remove from Drive'}
         message={t('podcastManagement.confirm.removeFromDrive', { title: removeEpisodeData.title })}
-        confirmText={t('podcastManagement.confirm.removeFromDrive.confirm') || 'Remove'}
+        confirmText={t('common.delete') || 'Remove'}
         confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
         icon={Trash2}
         iconColor="text-red-600"

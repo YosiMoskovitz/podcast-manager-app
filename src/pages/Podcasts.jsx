@@ -558,7 +558,7 @@ function Podcasts() {
         onClose={closeConfirmAction}
         onConfirm={handleConfirmAction}
         title={confirmAction?.type === 'delete'
-          ? t('podcasts.confirm.deleteTitle')
+          ? 'Delete Podcast'
           : confirmAction?.type === 'resetCounter'
           ? t('podcasts.confirm.resetCounterTitle')
           : confirmAction?.type === 'rebuildMetadata'

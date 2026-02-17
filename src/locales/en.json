@@ -213,7 +213,7 @@
       "keepEpisodeCountTip": "💡 Tip: Set to <strong>0</strong> to keep all episodes (unlimited)",
       "rssUrlNoEdit": "RSS URL cannot be changed after creation",
       "rssUrlChangeWarning": "Changing the RSS feed updates metadata and keeps existing episodes.",
-      "advancedActions": "Use these only when you really want to reset numbering or start fresh."
+      "advancedActions": "Use only when needed for reset or fresh start."
     }
   },
   "podcastManagement": {
