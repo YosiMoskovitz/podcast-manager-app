@@ -11,6 +11,7 @@ A full-stack web application for managing podcast RSS feeds with automated downl
 - Dedicated podcast management page with RSS feed view
 - Manual episode download, removal, and protection from cleanup
 - Import/export functionality for backup and migration
+- Apple Podcasts search for quick discovery
 
 ### 📥 Automated Downloads
 - Scheduled automatic checking for new episodes
@@ -24,6 +25,7 @@ A full-stack web application for managing podcast RSS feeds with automated downl
 - Folder browser for organizing content
 - Encrypted credential storage
 - Automatic upload after download
+- Folder creation, migration, and diagnostics
 
 ### 🔒 Security & Privacy
 - Google OAuth 2.0 authentication
@@ -70,93 +72,11 @@ A full-stack web application for managing podcast RSS feeds with automated downl
 
 ## Project Structure
 
-```
-podcast-manager-app/
-├── server/                 # Backend code
-│   ├── config/            # Configuration files
-│   │   ├── database.js    # MongoDB connection
-│   │   ├── env.js         # Environment variables
-│   │   └── passport.js    # Authentication strategy
-│   ├── middleware/        # Express middleware
-│   │   ├── auth.js        # Authentication middleware
-│   │   └── encryption.js  # Encryption middleware
-│   ├── models/            # Mongoose models
-│   │   ├── Podcast.js
-│   │   ├── Episode.js
-│   │   ├── User.js
-│   │   ├── DownloadHistory.js
-│   │   ├── DriveCredentials.js
-│   │   ├── SystemSettings.js
-│   │   ├── Stats.js
-│   │   └── UserEncryptionKey.js
-│   ├── routes/            # API routes
-│   │   ├── auth.js
-│   │   ├── podcasts.js
-│   │   ├── episodes.js
-│   │   ├── drive.js
-│   │   ├── settings.js
-│   │   ├── stats.js
-│   │   ├── sync.js
-│   │   └── import-export.js
-│   ├── services/          # Business logic
-│   │   ├── cloudStorage.js
-│   │   ├── downloader.js
-│   │   ├── encryption.js
-│   │   ├── rssParser.js
-│   │   ├── scheduler.js
-│   │   ├── syncStatus.js
-│   │   ├── userKeyManager.js
-│   │   ├── userScheduler.js
-│   │   └── verifier.js
-│   ├── utils/
-│   │   └── logger.js      # Winston logger configuration
-│   └── index.js           # Server entry point
-├── src/                   # Frontend code
-│   ├── components/        # React components
-│   │   ├── Layout.jsx
-│   │   ├── Toast.jsx
-│   │   ├── ConfirmModal.jsx
-│   │   ├── DriveFolderBrowser.jsx
-│   │   ├── LanguageSwitcher.jsx
-│   │   ├── SyncProgressModal.jsx
-│   │   └── VerificationModal.jsx
-│   ├── contexts/          # React contexts
-│   │   ├── AuthContext.jsx
-│   │   └── LanguageContext.jsx
-│   ├── hooks/             # Custom React hooks
-│   │   └── useToast.js
-│   ├── locales/           # Translation files
-│   │   ├── en.json
-│   │   └── he.json
-│   ├── pages/             # Page components
-│   │   ├── Dashboard.jsx
-│   │   ├── Podcasts.jsx
-│   │   ├── PodcastManagement.jsx
-│   │   ├── Episodes.jsx
-│   │   ├── Statistics.jsx
-│   │   ├── Settings.jsx
-│   │   └── Login.jsx
-│   ├── services/
-│   │   └── api.js         # API client
-│   ├── utils/
-│   │   └── apiUrl.js      # API URL configuration
-│   ├── App.jsx            # Main app component
-│   ├── main.jsx           # React entry point
-│   ├── i18n.js            # i18n configuration
-│   └── index.css          # Global styles
-├── downloads/             # Downloaded episode files
-├── logs/                  # Application logs
-├── .env                   # Environment variables (not in repo)
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-├── Dockerfile
-└── README.md
-```
+See [docs/project-structure.md](docs/project-structure.md).
 
 ## Prerequisites
 
-- **Node.js** 16.x or higher
+- **Node.js** 18.x or higher
 - **MongoDB** 4.x or higher (local or Atlas)
 - **Google Cloud Project** with OAuth 2.0 credentials and Drive API enabled
 - **npm** or **yarn**
@@ -192,12 +112,27 @@ podcast-manager-app/
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
    GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+
+   # Drive OAuth redirect (frontend settings page)
+   GOOGLE_DRIVE_CALLBACK_URL=http://localhost:3000/settings
    
-   # Frontend URL
-   CLIENT_URL=http://localhost:5173
+   # Frontend URLs
+   CLIENT_URL=http://localhost:3000
+   FRONTEND_URL=http://localhost:3000
+
+   # Cookie options (optional)
+   COOKIE_SAME_SITE=lax
+   COOKIE_DOMAIN=
    
    # Encryption Master Key (generate a secure random key)
-   MASTER_ENCRYPTION_KEY=your-32-character-encryption-key
+   ENCRYPTION_MASTER_KEY=your-64-character-hex-key
+
+   # Optional: override API base for the frontend dev proxy
+   VITE_API_URL=http://localhost:5000
+
+   # Optional: runtime API URL injection in production
+   RUNTIME_API_URL=https://your-domain.example/api
+   PROD_PROVIDER=RENDER
    ```
 
 4. **Set up Google OAuth 2.0**
@@ -224,7 +159,7 @@ npm run dev
 
 This will start:
 - Backend server at `http://localhost:5000`
-- Frontend dev server at `http://localhost:5173`
+- Frontend dev server at `http://localhost:3000`
 
 ### Production Mode
 ```bash
@@ -237,70 +172,7 @@ npm start
 
 ## API Endpoints
 
-### Authentication
-- `GET /api/auth/google` - Initiate Google OAuth
-- `GET /api/auth/google/callback` - OAuth callback
-- `GET /api/auth/user` - Get current user
-- `POST /api/auth/logout` - Logout
-
-### Podcasts
-- `GET /api/podcasts` - Get all podcasts
-- `GET /api/podcasts/:id` - Get podcast with latest episodes
-- `POST /api/podcasts` - Add new podcast
-- `PUT /api/podcasts/:id` - Update podcast
-- `DELETE /api/podcasts/:id` - Delete podcast
-- `POST /api/podcasts/:id/refresh` - Refresh a podcast feed
-- `POST /api/podcasts/:id/rebuild-metadata` - Rebuild metadata from RSS
-- `POST /api/podcasts/:id/reset-counter` - Reset numbering for a podcast
-- `POST /api/podcasts/:id/start-over` - Start over (delete episodes and Drive files)
-- `GET /api/podcasts/:id/rss-items` - RSS items merged with system status
-- `POST /api/podcasts/:id/download-rss` - Manual download from RSS item
-
-### Episodes
-- `GET /api/episodes` - Get episodes (with filters)
-- `GET /api/episodes/:id` - Get episode details
-- `POST /api/episodes/:id/download` - Download episode
-- `POST /api/episodes/:id/resync` - Re-upload episode to Drive
-- `POST /api/episodes/:id/protect` - Protect/unprotect episode from cleanup
-- `POST /api/episodes/:id/remove` - Remove episode from Drive (keep record)
-- `DELETE /api/episodes/:id` - Delete episode record
-- `DELETE /api/episodes/clear-all/confirm` - Clear all episodes
-
-### Drive Integration
-- `GET /api/drive/config` - Get Drive configuration
-- `POST /api/drive/credentials` - Upload OAuth credentials
-- `POST /api/drive/token` - Upload OAuth token
-- `GET /api/drive/auth-url` - Get OAuth authorization URL
-- `POST /api/drive/exchange-code` - Exchange OAuth code for tokens
-- `POST /api/drive/folder` - Set Drive folder
-- `POST /api/drive/toggle` - Enable/disable Drive
-- `POST /api/drive/test` - Test Drive connection
-- `POST /api/drive/create-folder` - Create main Podcasts folder
-- `POST /api/drive/create-custom-folder` - Create a custom folder
-- `POST /api/drive/migrate-folder` - Migrate to a new folder
-- `GET /api/drive/folders` - Browse Drive folders
-- `GET /api/drive/diagnostic/files` - Diagnostic listing
-- `DELETE /api/drive/config` - Reset Drive configuration
-
-### Settings
-- `GET /api/settings` - Get user settings
-- `PUT /api/settings` - Update settings
-
-### Statistics
-- `GET /api/stats/current` - Current stats
-- `GET /api/stats/history?days=7` - Historical stats
-- `GET /api/stats/downloads` - Download history
-- `GET /api/stats/podcasts` - Podcast stats summary
-
-### Sync
-- `GET /api/sync/status` - Get sync status
-- `POST /api/sync/verify` - Verify DB vs Drive files
-- `POST /api/sync/resync` - Re-sync episodes by ID
-- `POST /api/check-now` - Manually trigger a podcast check
-
-### Import/Export
-- `GET /api/data/export` - Export data
-- `POST /api/data/import` - Import data
+See [docs/api-endpoints.md](docs/api-endpoints.md).
 
 ## Features in Detail
 
@@ -345,8 +217,15 @@ docker run -p 5000:5000 --env-file .env podcast-manager
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID | Yes |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Yes |
 | `GOOGLE_CALLBACK_URL` | OAuth callback URL | Yes |
+| `GOOGLE_DRIVE_CALLBACK_URL` | Drive OAuth redirect URL | No |
 | `CLIENT_URL` | Frontend URL for CORS | Yes |
-| `MASTER_ENCRYPTION_KEY` | Master encryption key (32 chars) | Yes |
+| `FRONTEND_URL` | Frontend URL for login redirect | No |
+| `COOKIE_SAME_SITE` | Cookie same-site policy (`lax` recommended) | No |
+| `COOKIE_DOMAIN` | Cookie domain override | No |
+| `ENCRYPTION_MASTER_KEY` | Master encryption key (64 hex chars) | Yes |
+| `VITE_API_URL` | Dev proxy API URL override | No |
+| `RUNTIME_API_URL` | Production runtime API URL | No |
+| `PROD_PROVIDER` | Production provider hint (`RENDER`) | No |
 
 ## Logging
 

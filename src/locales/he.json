@@ -146,10 +146,12 @@
       "keepEpisodeCount": "מספר פרקים לשמור"
     },
     "actions": {
-      "refresh": "רענן",
+      "refresh": "סנכרן",
       "create": "צור",
       "saving": "יוצר...",
       "delete": "מחק",
+      "enable": "הפעל",
+      "disable": "השבת",
       "rebuildMetadata": "בנה מטא-דאטה מחדש",
       "resetCounter": "אפס מספור",
       "startOver": "התחל מחדש",
@@ -175,8 +177,8 @@
       "deleteFailed": "נכשל למחוק פודקאסט",
       "toggleSuccess": "פודקאסט {{status}}",
       "toggleFailed": "נכשל לעדכן פודקאסט",
-      "refreshSuccess": "רוענן \"{{name}}\": {{count}} פרקים חדשים נמצאו",
-      "refreshFailed": "נכשל לרענן פודקאסט",
+      "refreshSuccess": "סונכרן \"{{name}}\": {{count}} פרקים חדשים נמצאו",
+      "refreshFailed": "נכשל לסנכרן פודקאסט",
       "rebuildMetadataSuccess": "המטא-דאטה נבנתה מחדש עבור \"{{name}}\"",
       "rebuildMetadataFailed": "נכשל לבנות מטא-דאטה מחדש",
       "resetCounterSuccess": "המספור אופס עבור \"{{name}}\"",
@@ -218,7 +220,7 @@
   },
   "podcastManagement": {
     "title": "ניהול פודקאסט",
-    "backToPodcasts": "חזרה לפודקאסטים",
+    "backToPodcasts": "חזרה",
     "actions": {
       "manage": "ניהול",
       "reload": "רענן",

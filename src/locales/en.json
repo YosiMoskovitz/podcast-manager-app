@@ -146,10 +146,12 @@
       "keepEpisodeCount": "Keep Episode Count"
     },
     "actions": {
-      "refresh": "Refresh",
+      "refresh": "Sync",
       "create": "Create",
       "saving": "Creating...",
       "delete": "Delete",
+      "enable": "Enable",
+      "disable": "Disable",
       "rebuildMetadata": "Rebuild Metadata",
       "resetCounter": "Reset Numbering",
       "startOver": "Start Over",
@@ -175,8 +177,8 @@
       "deleteFailed": "Failed to delete podcast",
       "toggleSuccess": "Podcast {{status}}",
       "toggleFailed": "Failed to update podcast",
-      "refreshSuccess": "Refreshed \"{{name}}\": {{count}} new episodes found",
-      "refreshFailed": "Failed to refresh podcast",
+      "refreshSuccess": "Synced \"{{name}}\": {{count}} new episodes found",
+      "refreshFailed": "Failed to sync podcast",
       "rebuildMetadataSuccess": "Rebuilt metadata for \"{{name}}\"",
       "rebuildMetadataFailed": "Failed to rebuild metadata",
       "resetCounterSuccess": "Reset numbering for \"{{name}}\"",
@@ -218,7 +220,7 @@
   },
   "podcastManagement": {
     "title": "Podcast Management",
-    "backToPodcasts": "Back to Podcasts",
+    "backToPodcasts": "Back",
     "actions": {
       "manage": "Manage",
       "reload": "Reload",

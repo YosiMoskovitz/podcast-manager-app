@@ -40,7 +40,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/podcasts" element={<Podcasts />} />
-                <Route path="/podcasts/:id/manage" element={<PodcastManagement />} />
+                <Route path="/podcasts/:id" element={<PodcastManagement />} />
                 <Route path="/episodes" element={<Episodes />} />
                 <Route path="/statistics" element={<Statistics />} />
                 <Route path="/settings" element={<Settings />} />

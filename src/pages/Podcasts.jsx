@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, RefreshCw, Trash2, Power, PowerOff, Edit, RotateCcw, RefreshCcw, Settings, Search } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Power, PowerOff, Edit, RotateCcw, RefreshCcw, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getPodcasts, createPodcast, deletePodcast, updatePodcast, refreshPodcast, resetPodcastCounter, startOverPodcast, rebuildPodcastMetadata, searchPodcasts } from '../services/api';
 import { useToast } from '../hooks/useToast';
@@ -253,63 +253,70 @@ function Podcasts() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {podcasts.map(podcast => (
           <div key={podcast._id} className="card hover:shadow-lg transition-shadow">
-            <div className="flex items-start gap-4 mb-4">
-              {podcast.imageUrl ? (
-                <img src={podcast.imageUrl} alt={podcast.name} className="w-16 h-16 rounded-lg object-cover" />
-              ) : (
-                <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
-                  {t('podcasts.noImage')}
+            <Link to={`/podcasts/${podcast._id}`} className="block">
+              <div className="flex items-start gap-4 mb-4">
+                {podcast.imageUrl ? (
+                  <img src={podcast.imageUrl} alt={podcast.name} className="w-16 h-16 rounded-lg object-cover" />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
+                    {t('podcasts.noImage')}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg truncate">{podcast.name}</h3>
+                  <p className="text-sm text-gray-600 truncate">{podcast.author}</p>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-lg truncate">{podcast.name}</h3>
-                <p className="text-sm text-gray-600 truncate">{podcast.author}</p>
               </div>
-            </div>
-            
-            <p className="text-sm text-gray-700 mb-4 line-clamp-2">{podcast.description}</p>
-            
-            <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">{t('podcasts.fields.episodes')}:</span>
-                <span className="font-semibold">{podcast.totalEpisodes || 0}</span>
+              
+              <p className="text-sm text-gray-700 mb-4 line-clamp-2">{podcast.description}</p>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">{t('podcasts.fields.episodes')}:</span>
+                  <span className="font-semibold">{podcast.totalEpisodes || 0}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">{t('podcasts.fields.downloaded')}:</span>
+                  <span className="font-semibold">{podcast.downloadedEpisodes || 0}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">{t('podcasts.fields.downloaded')}:</span>
-                <span className="font-semibold">{podcast.downloadedEpisodes || 0}</span>
-              </div>
-            </div>
+            </Link>
             
             <div className="flex gap-2">
-              <Link
-                to={`/podcasts/${podcast._id}/manage`}
-                className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                {t('podcastManagement.actions.manage')}
-              </Link>
               <button
-                onClick={() => handleRefresh(podcast._id, podcast.name)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRefresh(podcast._id, podcast.name);
+                }}
                 className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 {t('podcasts.actions.refresh')}
               </button>
               <button
-                onClick={() => handleEdit(podcast)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(podcast);
+                }}
                 className="btn btn-secondary flex items-center justify-center"
                 title={t('common.edit')}
               >
                 <Edit className="w-4 h-4" />
               </button>
               <button
-                onClick={() => handleToggleEnabled(podcast)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleEnabled(podcast);
+                }}
                 className={`btn ${podcast.enabled ? 'btn-primary' : 'bg-gray-400 text-white'} flex items-center justify-center`}
               >
                 {podcast.enabled ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
               </button>
               <button
-                onClick={() => handleDelete(podcast._id, podcast.name)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(podcast._id, podcast.name);
+                }}
                 className="btn btn-danger flex items-center justify-center"
               >
                 <Trash2 className="w-4 h-4" />
@@ -514,37 +521,37 @@ function Podcasts() {
               </div>
               {editingPodcast && (
                 <div className="mt-6 border-t pt-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('podcasts.advanced.title')}</h3>
-                  <div className="flex gap-2">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('podcasts.advanced.title')}</h3>
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => openConfirmAction('rebuildMetadata', editingPodcast)}
-                      className="btn btn-secondary flex items-center gap-2"
+                      className="btn btn-secondary text-xs flex flex-col items-center justify-center gap-1 py-2 px-2"
                       disabled={savingPodcast || actionLoading}
                     >
                       <RefreshCcw className="w-4 h-4" />
-                      {t('podcasts.actions.rebuildMetadata')}
+                      <span className="text-center leading-tight">{t('podcasts.actions.rebuildMetadata')}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => openConfirmAction('resetCounter', editingPodcast)}
-                      className="btn btn-secondary flex items-center gap-2"
+                      className="btn btn-secondary text-xs flex flex-col items-center justify-center gap-1 py-2 px-2"
                       disabled={savingPodcast || actionLoading}
                     >
                       <RotateCcw className="w-4 h-4" />
-                      {t('podcasts.actions.resetCounter')}
+                      <span className="text-center leading-tight">{t('podcasts.actions.resetCounter')}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => openConfirmAction('startOver', editingPodcast)}
-                      className="btn btn-danger flex items-center gap-2"
+                      className="btn btn-danger text-xs flex flex-col items-center justify-center gap-1 py-2 px-2"
                       disabled={savingPodcast || actionLoading}
                     >
                       <Trash2 className="w-4 h-4" />
-                      {t('podcasts.actions.startOver')}
+                      <span className="text-center leading-tight">{t('podcasts.actions.startOver')}</span>
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">{t('podcasts.help.advancedActions')}</p>
+                  <p className="text-xs text-gray-500 mt-3">{t('podcasts.help.advancedActions')}</p>
                 </div>
               )}
               </form>
