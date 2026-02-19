@@ -41,46 +41,23 @@ function bypassAdServices(url) {
     // Megaphone doesn't have an easy bypass, but browser headers help
   }
 
+  // Acast: https://sphinx.acast.com/p/open/s/{showId}/e/{episodeId}/media.mp3
+  // This URL serves ad-free audio when accessed directly (like browsers do)
+  // but redirects to stitcher2.acast.com which injects ads when following redirects
+  // Solution: Use sphinx URL directly with a special marker to skip redirect resolution
+  if (url.includes('sphinx.acast.com')) {
+    logger.info('Acast sphinx URL detected - will use directly for ad-free audio');
+    return url;
+  }
+
+  // Stitcher (Acast's ad-injection service): If this appears directly in RSS (rare)
+  if (url.includes('stitcher2.acast.com') || url.includes('stitcher.simplecast.com')) {
+    logger.warn('Detected Stitcher/Acast ad-injection URL in RSS feed', { url: url.split('?')[0] });
+  }
+
   // Simplecast: https://simplecast.fm/...
   if (url.includes('simplecast.fm')) {
     logger.warn(`Detected Simplecast ad-injection service in URL: ${url}`);
-  }
-
-  // Acast + Spreaker: https://sphinx.acast.com/p/open/s/{showId}/e/{url_encoded_episode_url}/media.mp3
-  // Extract: https://api.spreaker.com/episode/{episodeId}/media.mp3
-  if (url.includes('sphinx.acast.com')) {
-    try {
-      // Log the full URL and its structure for debugging
-      logger.debug('Acast URL detected for bypass', { fullUrl: url });
-      
-      // Try multiple regex patterns to handle different encodings
-      // Pattern 1: /e/{encoded_url}/media.mp3
-      let match = url.match(/\/e\/(.+?)\/media\.mp3/);
-      
-      if (match) {
-        const encodedUrl = match[1];
-        logger.debug('Acast bypass - raw captured value', { captured: encodedUrl });
-        
-        // Try to decode - it might be URL-encoded
-        let realUrl = encodedUrl;
-        try {
-          realUrl = decodeURIComponent(encodedUrl);
-        } catch (decodeErr) {
-          logger.debug('decodeURIComponent failed, using captured value as-is', { 
-            captured: encodedUrl,
-            error: decodeErr.message 
-          });
-        }
-        
-        // Validate it's a real URL
-        if (realUrl.startsWith('http')) {
-          logger.info(`Bypassing Acast ad-injection: extracted real URL from Spreaker`, { url: realUrl });
-          return realUrl;
-        }
-      }
-    } catch (err) {
-      logger.debug('Failed to parse Acast URL for bypass', { error: err.message, url });
-    }
   }
 
   return url;
@@ -117,6 +94,12 @@ async function resolveAudioUrl(initialUrl, maxHops = 5) {
   if (!initialUrl) return initialUrl;
   let currentUrl = bypassAdServices(initialUrl);
   const trace = [currentUrl];
+
+  // For Acast sphinx URLs, skip redirect resolution to get ad-free audio
+  if (currentUrl.includes('sphinx.acast.com')) {
+    logger.info('Skipping redirect resolution for Acast sphinx URL (ad-free direct access)');
+    return currentUrl;
+  }
 
   for (let hop = 0; hop < maxHops; hop += 1) {
     try {
