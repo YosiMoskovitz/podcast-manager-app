@@ -50,15 +50,36 @@ function bypassAdServices(url) {
   // Extract: https://api.spreaker.com/episode/{episodeId}/media.mp3
   if (url.includes('sphinx.acast.com')) {
     try {
-      const match = url.match(/sphinx\.acast\.com\/p\/open\/s\/[^/]+\/e\/([^/]+)\/media\.mp3/);
+      // Log the full URL and its structure for debugging
+      logger.debug('Acast URL detected for bypass', { fullUrl: url });
+      
+      // Try multiple regex patterns to handle different encodings
+      // Pattern 1: /e/{encoded_url}/media.mp3
+      let match = url.match(/\/e\/(.+?)\/media\.mp3/);
+      
       if (match) {
         const encodedUrl = match[1];
-        const realUrl = decodeURIComponent(encodedUrl);
-        logger.info(`Bypassing Acast ad-injection: extracted real URL from Spreaker`);
-        return realUrl;
+        logger.debug('Acast bypass - raw captured value', { captured: encodedUrl });
+        
+        // Try to decode - it might be URL-encoded
+        let realUrl = encodedUrl;
+        try {
+          realUrl = decodeURIComponent(encodedUrl);
+        } catch (decodeErr) {
+          logger.debug('decodeURIComponent failed, using captured value as-is', { 
+            captured: encodedUrl,
+            error: decodeErr.message 
+          });
+        }
+        
+        // Validate it's a real URL
+        if (realUrl.startsWith('http')) {
+          logger.info(`Bypassing Acast ad-injection: extracted real URL from Spreaker`, { url: realUrl });
+          return realUrl;
+        }
       }
     } catch (err) {
-      logger.debug('Failed to parse Acast URL for bypass', { error: err.message });
+      logger.debug('Failed to parse Acast URL for bypass', { error: err.message, url });
     }
   }
 
