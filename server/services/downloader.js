@@ -46,6 +46,22 @@ function bypassAdServices(url) {
     logger.warn(`Detected Simplecast ad-injection service in URL: ${url}`);
   }
 
+  // Acast + Spreaker: https://sphinx.acast.com/p/open/s/{showId}/e/{url_encoded_episode_url}/media.mp3
+  // Extract: https://api.spreaker.com/episode/{episodeId}/media.mp3
+  if (url.includes('sphinx.acast.com')) {
+    try {
+      const match = url.match(/sphinx\.acast\.com\/p\/open\/s\/[^/]+\/e\/([^/]+)\/media\.mp3/);
+      if (match) {
+        const encodedUrl = match[1];
+        const realUrl = decodeURIComponent(encodedUrl);
+        logger.info(`Bypassing Acast ad-injection: extracted real URL from Spreaker`);
+        return realUrl;
+      }
+    } catch (err) {
+      logger.debug('Failed to parse Acast URL for bypass', { error: err.message });
+    }
+  }
+
   return url;
 }
 
