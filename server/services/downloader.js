@@ -42,17 +42,17 @@ function bypassAdServices(url) {
   }
 
   // Acast: https://sphinx.acast.com/p/open/s/{showId}/e/{episodeId}/media.mp3
-  // This URL serves ad-free audio when accessed directly (like browsers do)
-  // but redirects to stitcher2.acast.com which injects ads when following redirects
-  // Solution: Use sphinx URL directly with a special marker to skip redirect resolution
+  // This redirects to stitcher2.acast.com with a signed URL
+  // Browsers get ad-free signed URLs, bots get ad-injected versions
+  // Solution: Follow redirects with browser headers to get the signed ad-free URL
   if (url.includes('sphinx.acast.com')) {
-    logger.info('Acast sphinx URL detected - will use directly for ad-free audio');
-    return url;
+    logger.info('Acast sphinx URL detected - will follow redirects to get signed ad-free URL');
+    // Let resolveAudioUrl follow the redirect chain with browser headers
   }
 
-  // Stitcher (Acast's ad-injection service): If this appears directly in RSS (rare)
+  // Stitcher (Acast's CDN): This is where the actual audio is served
   if (url.includes('stitcher2.acast.com') || url.includes('stitcher.simplecast.com')) {
-    logger.warn('Detected Stitcher/Acast ad-injection URL in RSS feed', { url: url.split('?')[0] });
+    logger.debug('Acast Stitcher CDN URL (should be signed for ad-free delivery)');
   }
 
   // Simplecast: https://simplecast.fm/...
@@ -71,10 +71,13 @@ const BROWSER_HEADERS = {
   'Cache-Control': 'no-cache',
   'Pragma': 'no-cache',
   'Sec-Fetch-Dest': 'audio',
-  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Mode': 'no-cors',
+  'Sec-Fetch-Site': 'cross-site',
   'DNT': '1',
   'Connection': 'keep-alive',
-  'Upgrade-Insecure-Requests': '1'
+  'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"'
 };
 
 function buildHeaders(url) {
@@ -94,12 +97,6 @@ async function resolveAudioUrl(initialUrl, maxHops = 5) {
   if (!initialUrl) return initialUrl;
   let currentUrl = bypassAdServices(initialUrl);
   const trace = [currentUrl];
-
-  // For Acast sphinx URLs, skip redirect resolution to get ad-free audio
-  if (currentUrl.includes('sphinx.acast.com')) {
-    logger.info('Skipping redirect resolution for Acast sphinx URL (ad-free direct access)');
-    return currentUrl;
-  }
 
   for (let hop = 0; hop < maxHops; hop += 1) {
     try {
@@ -154,7 +151,16 @@ async function resolveAudioUrl(initialUrl, maxHops = 5) {
   }
 
   if (trace.length > 1) {
-    logger.debug('Resolved audio URL redirect chain', { trace });
+    // Log Acast redirects with more detail since they're critical for ad-free delivery
+    if (initialUrl.includes('sphinx.acast.com')) {
+      const finalUrl = currentUrl.split('?')[0]; // Hide query params for cleaner logs
+      logger.info(`Acast redirect chain resolved: sphinx → ${finalUrl.includes('stitcher') ? 'Stitcher CDN (signed)' : 'unknown'}`, { 
+        hops: trace.length - 1,
+        hasSigned: currentUrl.includes('Signature=')
+      });
+    } else {
+      logger.debug('Resolved audio URL redirect chain', { trace });
+    }
   }
   return currentUrl;
 }
